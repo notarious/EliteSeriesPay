@@ -1,0 +1,72 @@
+---
+alwaysApply: true
+---
+
+# EliteSeriesPay
+
+EliteSeriesPay is a local web application for managing participants, payments, and budgets of small paid communities.
+
+## Goals
+
+- Build a useful local application.
+- Demonstrate clean Java backend development.
+- Use Cursor as an assisted development tool, not as an uncontrolled code generator.
+
+## Approved stack
+
+- Java 21
+- Spring Boot
+- SQLite
+- Flyway
+- Spring Data JPA
+- Thymeleaf
+- Bootstrap
+- Maven
+- JUnit
+
+## Constraints
+
+- Local application only.
+- No React.
+- No Docker.
+- No Kubernetes.
+- No PostgreSQL.
+- No Kafka or RabbitMQ.
+- No cloud services.
+- No external authentication.
+- No VK API integration in the first version.
+
+## Domain
+
+Main entities:
+
+- Project
+- Participant
+- Payment
+- Application settings
+
+Payment sources:
+
+- VK Donut
+- Other
+
+Business rules:
+
+- VK Donut payments always have a fixed 10% fee.
+- Other payment sources have no automatic fee.
+- Payments may be in RUB, USD, or EUR.
+- USD and EUR payments are converted to RUB using an exchange rate.
+- The user may override the exchange rate manually.
+- Each project has its own episode cost in RUB.
+- The application calculates monthly net income and the number of episodes that can be funded.
+
+## Development rules
+
+- Work in small vertical slices.
+- Before significant changes, propose a short plan.
+- Do not implement multiple large features at once.
+- Keep business logic out of controllers.
+- Put business rules in services.
+- Add tests for calculation logic.
+- Prefer simple, explicit, readable code.
+- Do not introduce technologies outside the approved stack.
