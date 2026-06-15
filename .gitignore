@@ -9,3 +9,6 @@ logs/
 *.log
 
 .env
+
+*.db
+*.db-journal
