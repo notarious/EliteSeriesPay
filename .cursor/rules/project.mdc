@@ -70,3 +70,16 @@ Business rules:
 - Add tests for calculation logic.
 - Prefer simple, explicit, readable code.
 - Do not introduce technologies outside the approved stack.
+
+## Validation rules
+
+- UI forms should use Bean Validation for user input errors.
+- Services must protect business invariants and must not rely only on web-layer validation.
+- Service exceptions should not depend on web form field names.
+- Controllers may translate service exceptions into form errors.
+
+## Code generation rules
+
+- Do not silently remove existing validation, tests, or business rules during refactoring.
+- When changing validation behavior, update both service tests and web form handling.
+- Keep normalization such as trimming in one place.

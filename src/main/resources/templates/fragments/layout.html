@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org" th:fragment="layout (pageTitle, content)">
+<html lang="ru" xmlns:th="http://www.thymeleaf.org" th:fragment="layout (pageTitle, content)">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -11,13 +11,16 @@
     <div class="container">
         <a class="navbar-brand" th:href="@{/}">EliteSeriesPay</a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
-                aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                aria-controls="mainNavbar" aria-expanded="false" aria-label="Открыть меню">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link active" aria-current="page" th:href="@{/}">Home</a>
+                    <a class="nav-link" th:href="@{/}">Главная</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" th:href="@{/projects}">Проекты</a>
                 </li>
             </ul>
         </div>
@@ -30,7 +33,7 @@
 
 <footer class="bg-light border-top py-3 mt-auto">
     <div class="container text-muted small">
-        EliteSeriesPay &mdash; local community payments and budget tracking
+        EliteSeriesPay &mdash; локальное приложение для учёта платежей и бюджетов сообществ
     </div>
 </footer>
 

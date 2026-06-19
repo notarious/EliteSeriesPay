@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-<html lang="en" xmlns:th="http://www.thymeleaf.org"
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title>Home &mdash; EliteSeriesPay</title>
+    <title>Главная &mdash; EliteSeriesPay</title>
 </head>
 <body>
 <div th:fragment="content">
@@ -10,11 +10,12 @@
         <div class="col-lg-8">
             <h1 class="mb-3">EliteSeriesPay</h1>
             <p class="lead">
-                Local application for managing participants, payments, and budgets for small paid communities.
+                Локальное приложение для управления участниками, платежами и бюджетами небольших платных сообществ.
             </p>
-            <p class="text-muted mb-0">
-                Project, participant, payment, and reporting features will be added in upcoming slices.
+            <p class="text-muted">
+                Функции проектов, участников, платежей и отчётов будут добавлены в следующих этапах.
             </p>
+            <a class="btn btn-primary" th:href="@{/projects}">Перейти к проектам</a>
         </div>
     </div>
 </div>
