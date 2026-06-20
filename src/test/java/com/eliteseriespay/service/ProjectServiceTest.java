@@ -7,7 +7,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.eliteseriespay.domain.Project;
+import com.eliteseriespay.exception.NotFoundException;
+import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.ProjectRepository;
+import com.eliteseriespay.support.TestEntities;
+import com.eliteseriespay.validation.ValidationError;
 import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
@@ -43,62 +47,60 @@ class ProjectServiceTest {
     @Test
     void create_rejectsBlankName() {
         assertThatThrownBy(() -> projectService.create("  ", new BigDecimal("100.00")))
-                .isInstanceOf(ProjectValidationException.class)
-                .satisfies(ex -> assertThat(((ProjectValidationException) ex).getError())
-                        .isEqualTo(ProjectValidationError.NAME_REQUIRED));
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.PROJECT_NAME_REQUIRED));
     }
 
     @Test
     void create_rejectsMissingEpisodeCost() {
         assertThatThrownBy(() -> projectService.create("My project", null))
-                .isInstanceOf(ProjectValidationException.class)
-                .satisfies(ex -> assertThat(((ProjectValidationException) ex).getError())
-                        .isEqualTo(ProjectValidationError.EPISODE_COST_REQUIRED));
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.EPISODE_COST_REQUIRED));
     }
 
     @Test
     void create_rejectsNonPositiveEpisodeCost() {
         assertThatThrownBy(() -> projectService.create("My project", BigDecimal.ZERO))
-                .isInstanceOf(ProjectValidationException.class)
-                .satisfies(ex -> assertThat(((ProjectValidationException) ex).getError())
-                        .isEqualTo(ProjectValidationError.EPISODE_COST_NOT_POSITIVE));
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.EPISODE_COST_NOT_POSITIVE));
     }
 
     @Test
     void update_trimsNameAndSavesChanges() {
-        Project existing = new Project("Old name", new BigDecimal("100.00"));
+        Project existing = TestEntities.project(1L, "Old name", new BigDecimal("100.00"));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(existing));
-        when(projectRepository.save(existing)).thenReturn(existing);
 
         Project updated = projectService.update(1L, "  New name  ", new BigDecimal("250.75"));
 
         assertThat(updated.getName()).isEqualTo("New name");
         assertThat(updated.getEpisodeCostRub()).isEqualByComparingTo("250.75");
-        verify(projectRepository).save(existing);
     }
 
     @Test
     void update_rejectsBlankName() {
         assertThatThrownBy(() -> projectService.update(1L, "  ", new BigDecimal("100.00")))
-                .isInstanceOf(ProjectValidationException.class)
-                .satisfies(ex -> assertThat(((ProjectValidationException) ex).getError())
-                        .isEqualTo(ProjectValidationError.NAME_REQUIRED));
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.PROJECT_NAME_REQUIRED));
     }
 
     @Test
     void update_rejectsMissingEpisodeCost() {
         assertThatThrownBy(() -> projectService.update(1L, "My project", null))
-                .isInstanceOf(ProjectValidationException.class)
-                .satisfies(ex -> assertThat(((ProjectValidationException) ex).getError())
-                        .isEqualTo(ProjectValidationError.EPISODE_COST_REQUIRED));
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.EPISODE_COST_REQUIRED));
     }
 
     @Test
     void update_rejectsNonPositiveEpisodeCost() {
         assertThatThrownBy(() -> projectService.update(1L, "My project", BigDecimal.ZERO))
-                .isInstanceOf(ProjectValidationException.class)
-                .satisfies(ex -> assertThat(((ProjectValidationException) ex).getError())
-                        .isEqualTo(ProjectValidationError.EPISODE_COST_NOT_POSITIVE));
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.EPISODE_COST_NOT_POSITIVE));
     }
 
     @Test
@@ -106,7 +108,7 @@ class ProjectServiceTest {
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> projectService.update(99L, "Name", new BigDecimal("100.00")))
-                .isInstanceOf(ProjectNotFoundException.class)
+                .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found: 99");
     }
 }

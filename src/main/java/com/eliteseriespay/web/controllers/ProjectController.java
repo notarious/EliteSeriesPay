@@ -1,10 +1,11 @@
-package com.eliteseriespay.web;
+package com.eliteseriespay.web.controllers;
 
 import com.eliteseriespay.domain.Project;
-import com.eliteseriespay.service.ProjectNotFoundException;
+import com.eliteseriespay.exception.NotFoundException;
+import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
-import com.eliteseriespay.service.ProjectValidationError;
-import com.eliteseriespay.service.ProjectValidationException;
+import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.form.ProjectForm;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -22,9 +23,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProjectController {
 
     private final ProjectService projectService;
+    private final ProjectMembershipService projectMembershipService;
 
-    public ProjectController(ProjectService projectService) {
+    public ProjectController(ProjectService projectService,
+                             ProjectMembershipService projectMembershipService) {
         this.projectService = projectService;
+        this.projectMembershipService = projectMembershipService;
     }
 
     @GetMapping
@@ -48,12 +52,20 @@ public class ProjectController {
 
         try {
             projectService.create(projectForm.getName(), projectForm.getEpisodeCostRub());
-        } catch (ProjectValidationException ex) {
+        } catch (ValidationException ex) {
             rejectValidationError(bindingResult, ex);
             return "projects/new";
         }
 
         return "redirect:/projects";
+    }
+
+    @GetMapping("/{id}")
+    public String show(@PathVariable Long id, Model model) {
+        Project project = projectService.findById(id);
+        model.addAttribute("project", project);
+        model.addAttribute("memberships", projectMembershipService.findActiveByProjectId(id));
+        return "projects/show";
     }
 
     @GetMapping("/{id}/edit")
@@ -81,7 +93,7 @@ public class ProjectController {
 
         try {
             projectService.update(id, projectForm.getName(), projectForm.getEpisodeCostRub());
-        } catch (ProjectValidationException ex) {
+        } catch (ValidationException ex) {
             rejectValidationError(bindingResult, ex);
             model.addAttribute("projectId", id);
             return "projects/edit";
@@ -90,16 +102,17 @@ public class ProjectController {
         return "redirect:/projects";
     }
 
-    @ExceptionHandler(ProjectNotFoundException.class)
-    public String handleProjectNotFound() {
+    @ExceptionHandler(NotFoundException.class)
+    public String handleNotFound() {
         return "redirect:/projects";
     }
 
-    private void rejectValidationError(BindingResult bindingResult, ProjectValidationException ex) {
-        ProjectValidationError error = ex.getError();
+    private void rejectValidationError(BindingResult bindingResult, ValidationException ex) {
+        ValidationError error = ex.getError();
         String field = switch (error) {
-            case NAME_REQUIRED -> "name";
+            case PROJECT_NAME_REQUIRED -> "name";
             case EPISODE_COST_REQUIRED, EPISODE_COST_NOT_POSITIVE -> "episodeCostRub";
+            default -> throw new IllegalStateException("Unexpected validation error: " + error);
         };
         bindingResult.rejectValue(field, error.name(), error.getMessage());
     }

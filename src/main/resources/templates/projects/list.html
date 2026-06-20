@@ -26,13 +26,16 @@
             </thead>
             <tbody>
             <tr th:each="project : ${projects}">
-                <td th:text="${project.name}">Пример проекта</td>
+                <td>
+                    <a th:href="@{/projects/{id}(id=${project.id})}" th:text="${project.name}">Пример проекта</a>
+                </td>
                 <td class="text-end"
                     th:text="${#numbers.formatDecimal(project.episodeCostRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
                     1,000.00 ₽
                 </td>
                 <td class="text-end">
-                    <a class="btn btn-sm btn-outline-primary" th:href="@{/projects/{id}/edit(id=${project.id})}">Изменить</a>
+                    <a class="btn btn-sm btn-outline-primary" th:href="@{/projects/{id}(id=${project.id})}">Открыть</a>
+                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/projects/{id}/edit(id=${project.id})}">Изменить</a>
                 </td>
             </tr>
             </tbody>

@@ -6,7 +6,6 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -14,27 +13,31 @@ import lombok.NoArgsConstructor;
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @Entity
-@Table(name = "projects")
-public class Project {
+@Table(name = "participants")
+public class Participant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(columnDefinition = "INTEGER")
     private Long id;
 
+    @Column(name = "vk_id", nullable = false, unique = true)
+    private String vkId;
+
     @Column(nullable = false)
     private String name;
 
-    @Column(name = "episode_cost_rub", nullable = false)
-    private BigDecimal episodeCostRub;
+    @Column
+    private String comment;
 
-    public Project(String name, BigDecimal episodeCostRub) {
+    public Participant(String vkId, String name, String comment) {
+        this.vkId = vkId;
         this.name = name;
-        this.episodeCostRub = episodeCostRub;
+        this.comment = comment;
     }
 
-    public void updateDetails(String name, BigDecimal episodeCostRub) {
+    public void updateDetails(String name, String comment) {
         this.name = name;
-        this.episodeCostRub = episodeCostRub;
+        this.comment = comment;
     }
 }

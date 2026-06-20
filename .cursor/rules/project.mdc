@@ -42,6 +42,7 @@ Main entities:
 
 - Project
 - Participant
+- Project membership
 - Payment
 - Application settings
 
@@ -52,13 +53,24 @@ Payment sources:
 
 Business rules:
 
-- VK Donut payments always have a fixed 10% fee.
-- Other payment sources have no automatic fee.
+- Participants are global.
+- A participant may belong to multiple projects.
+- Project membership has status ACTIVE or LEFT.
+- Removing a participant from a project means marking membership as LEFT, not deleting the participant.
 - Payments may be in RUB, USD, or EUR.
 - USD and EUR payments are converted to RUB using an exchange rate.
 - The user may override the exchange rate manually.
 - Each project has its own episode cost in RUB.
 - The application calculates monthly net income and the number of episodes that can be funded.
+- VK Donut fee percent is configurable in application settings.
+- Default VK Donut fee percent is 10%.
+- Changing VK Donut fee percent affects only future payments.
+- Each payment stores the fee percent used at creation time.
+- Existing payments must not be recalculated when settings change.
+- Other payment sources have no automatic fee.
+- Financial history should not be physically deleted after payments exist.
+- Projects with historical data should be archived rather than deleted.
+- Payments should be voided/cancelled rather than deleted once financial history matters.
 
 ## Development rules
 
@@ -67,7 +79,7 @@ Business rules:
 - Do not implement multiple large features at once.
 - Keep business logic out of controllers.
 - Put business rules in services.
-- Add tests for calculation logic.
+- Add tests for calculation logic and business rules.
 - Prefer simple, explicit, readable code.
 - Do not introduce technologies outside the approved stack.
 
@@ -83,3 +95,4 @@ Business rules:
 - Do not silently remove existing validation, tests, or business rules during refactoring.
 - When changing validation behavior, update both service tests and web form handling.
 - Keep normalization such as trimming in one place.
+- Keep UI text in Russian.

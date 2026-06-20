@@ -3,7 +3,11 @@ package com.eliteseriespay.web.form;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.math.BigDecimal;
+import lombok.Getter;
+import lombok.Setter;
 
+@Getter
+@Setter
 public class ProjectForm {
 
     @NotBlank(message = "Укажите название")
@@ -11,20 +15,4 @@ public class ProjectForm {
 
     @NotNull(message = "Укажите стоимость эпизода")
     private BigDecimal episodeCostRub;
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public BigDecimal getEpisodeCostRub() {
-        return episodeCostRub;
-    }
-
-    public void setEpisodeCostRub(BigDecimal episodeCostRub) {
-        this.episodeCostRub = episodeCostRub;
-    }
 }
