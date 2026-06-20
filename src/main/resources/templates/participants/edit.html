@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Редактирование участника — EliteSeriesPay</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <h1 class="mb-4">Редактирование участника</h1>
+
+            <form th:action="@{/participants/{id}/edit(id=${participantId})}"
+                  th:object="${participantEditForm}" method="post" novalidate>
+                <div class="mb-3">
+                    <label for="vkId" class="form-label">VK ID</label>
+                    <input type="text" class="form-control" id="vkId" th:field="*{vkId}"
+                           th:classappend="${#fields.hasErrors('vkId')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('vkId')}" th:errors="*{vkId}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="name" class="form-label">Имя</label>
+                    <input type="text" class="form-control" id="name" th:field="*{name}"
+                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="comment" class="form-label">Комментарий</label>
+                    <textarea class="form-control" id="comment" th:field="*{comment}" rows="3"></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Сохранить</button>
+                    <a class="btn btn-outline-secondary"
+                       th:href="@{/participants/{id}(id=${participantId})}">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+</body>
+</html>

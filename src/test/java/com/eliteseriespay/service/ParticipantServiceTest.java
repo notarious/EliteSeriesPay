@@ -13,6 +13,7 @@ import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.ParticipantRepository;
 import com.eliteseriespay.support.TestEntities;
 import com.eliteseriespay.validation.ValidationError;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -187,5 +188,14 @@ class ParticipantServiceTest {
         assertThatThrownBy(() -> participantService.update(99L, "12345", "Name", null))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Participant not found: 99");
+    }
+
+    @Test
+    void findAllOrderByName_returnsParticipantsFromRepository() {
+        Participant first = TestEntities.participant(1L, "111", "Anna", null);
+        Participant second = TestEntities.participant(2L, "222", "Boris", "note");
+        when(participantRepository.findAllByOrderByNameAsc()).thenReturn(List.of(first, second));
+
+        assertThat(participantService.findAllOrderByName()).containsExactly(first, second);
     }
 }

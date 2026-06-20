@@ -5,7 +5,7 @@ import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
-import com.eliteseriespay.validation.ValidationError;
+import com.eliteseriespay.web.FormErrorMapper;
 import com.eliteseriespay.web.form.ProjectForm;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
@@ -24,11 +24,14 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ProjectMembershipService projectMembershipService;
+    private final FormErrorMapper formErrorMapper;
 
     public ProjectController(ProjectService projectService,
-                             ProjectMembershipService projectMembershipService) {
+                             ProjectMembershipService projectMembershipService,
+                             FormErrorMapper formErrorMapper) {
         this.projectService = projectService;
         this.projectMembershipService = projectMembershipService;
+        this.formErrorMapper = formErrorMapper;
     }
 
     @GetMapping
@@ -54,7 +57,7 @@ public class ProjectController {
             Project project = projectService.create(projectForm.getName(), projectForm.getEpisodeCostRub());
             return "redirect:/projects/" + project.getId();
         } catch (ValidationException ex) {
-            rejectValidationError(bindingResult, ex);
+            formErrorMapper.rejectProjectForm(bindingResult, ex);
             return "projects/new";
         }
     }
@@ -93,7 +96,7 @@ public class ProjectController {
         try {
             projectService.update(id, projectForm.getName(), projectForm.getEpisodeCostRub());
         } catch (ValidationException ex) {
-            rejectValidationError(bindingResult, ex);
+            formErrorMapper.rejectProjectForm(bindingResult, ex);
             model.addAttribute("projectId", id);
             return "projects/edit";
         }
@@ -104,15 +107,5 @@ public class ProjectController {
     @ExceptionHandler(NotFoundException.class)
     public String handleNotFound() {
         return "redirect:/projects";
-    }
-
-    private void rejectValidationError(BindingResult bindingResult, ValidationException ex) {
-        ValidationError error = ex.getError();
-        String field = switch (error) {
-            case PROJECT_NAME_REQUIRED -> "name";
-            case EPISODE_COST_REQUIRED, EPISODE_COST_NOT_POSITIVE -> "episodeCostRub";
-            default -> throw new IllegalStateException("Unexpected validation error: " + error);
-        };
-        bindingResult.rejectValue(field, error.name(), error.getMessage());
     }
 }

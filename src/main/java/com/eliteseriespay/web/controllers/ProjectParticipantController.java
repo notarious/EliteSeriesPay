@@ -5,6 +5,8 @@ import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.validation.ValidationError;
+import com.eliteseriespay.web.FormErrorMapper;
+import com.eliteseriespay.web.form.ExistingParticipantForm;
 import com.eliteseriespay.web.form.ParticipantEditForm;
 import com.eliteseriespay.web.form.ParticipantForm;
 import jakarta.validation.Valid;
@@ -23,16 +25,42 @@ import org.springframework.web.bind.annotation.RequestMapping;
 public class ProjectParticipantController {
 
     private final ProjectMembershipService projectMembershipService;
+    private final FormErrorMapper formErrorMapper;
 
-    public ProjectParticipantController(ProjectMembershipService projectMembershipService) {
+    public ProjectParticipantController(ProjectMembershipService projectMembershipService,
+                                        FormErrorMapper formErrorMapper) {
         this.projectMembershipService = projectMembershipService;
+        this.formErrorMapper = formErrorMapper;
     }
 
     @GetMapping("/new")
     public String createForm(@PathVariable Long projectId, Model model) {
         model.addAttribute("projectId", projectId);
-        model.addAttribute("participantForm", new ParticipantForm());
+        populateNewFormModel(model, projectId, null);
         return "projects/participants/new";
+    }
+
+    @PostMapping("/existing")
+    public String addExisting(@PathVariable Long projectId,
+                              @Valid @ModelAttribute("existingParticipantForm")
+                              ExistingParticipantForm existingParticipantForm,
+                              BindingResult bindingResult,
+                              Model model) {
+        if (bindingResult.hasErrors()) {
+            populateNewFormModel(model, projectId, "existing");
+            return "projects/participants/new";
+        }
+
+        try {
+            projectMembershipService.addParticipantToProject(
+                    projectId, existingParticipantForm.getParticipantId());
+        } catch (ValidationException ex) {
+            formErrorMapper.rejectExistingParticipantForm(bindingResult, ex);
+            populateNewFormModel(model, projectId, "existing");
+            return "projects/participants/new";
+        }
+
+        return "redirect:/projects/" + projectId;
     }
 
     @PostMapping
@@ -42,6 +70,7 @@ public class ProjectParticipantController {
                          Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("projectId", projectId);
+            populateNewFormModel(model, projectId, "new");
             return "projects/participants/new";
         }
 
@@ -52,8 +81,9 @@ public class ProjectParticipantController {
                     participantForm.getName(),
                     participantForm.getComment());
         } catch (ValidationException ex) {
-            rejectValidationError(bindingResult, ex, true);
+            formErrorMapper.rejectProjectParticipantForm(bindingResult, ex);
             model.addAttribute("projectId", projectId);
+            populateNewFormModel(model, projectId, "new");
             return "projects/participants/new";
         }
 
@@ -96,7 +126,7 @@ public class ProjectParticipantController {
                     participantEditForm.getName(),
                     participantEditForm.getComment());
         } catch (ValidationException ex) {
-            rejectValidationError(bindingResult, ex, true);
+            formErrorMapper.rejectProjectParticipantForm(bindingResult, ex);
             populateEditModel(model, projectId, participantId);
             return "projects/participants/edit";
         }
@@ -108,8 +138,10 @@ public class ProjectParticipantController {
     public String remove(@PathVariable Long projectId, @PathVariable Long participantId) {
         try {
             projectMembershipService.removeFromProject(projectId, participantId);
-        } catch (ValidationException ignored) {
-            // Already removed or never a member — redirect silently.
+        } catch (ValidationException ex) {
+            if (ex.getError() != ValidationError.NOT_AN_ACTIVE_MEMBER) {
+                throw ex;
+            }
         }
 
         return "redirect:/projects/" + projectId;
@@ -129,29 +161,25 @@ public class ProjectParticipantController {
     }
 
     private void populateEditModel(Model model, Long projectId, Long participantId) {
-        Participant participant = projectMembershipService.findActiveParticipant(projectId, participantId);
+        projectMembershipService.findActiveParticipant(projectId, participantId);
         model.addAttribute("projectId", projectId);
         model.addAttribute("participantId", participantId);
     }
 
-    private void rejectValidationError(BindingResult bindingResult,
-                                         ValidationException ex,
-                                         boolean includeVkIdErrors) {
-        ValidationError error = ex.getError();
-        switch (error) {
-            case VK_ID_REQUIRED, VK_ID_ALREADY_EXISTS -> {
-                if (includeVkIdErrors) {
-                    bindingResult.rejectValue("vkId", error.name(), error.getMessage());
-                }
-            }
-            case PARTICIPANT_NAME_REQUIRED -> bindingResult.rejectValue("name", error.name(), error.getMessage());
-            case PARTICIPANT_ALREADY_ACTIVE -> {
-                if (includeVkIdErrors) {
-                    bindingResult.rejectValue("vkId", error.name(), error.getMessage());
-                }
-            }
-            case NOT_AN_ACTIVE_MEMBER -> bindingResult.rejectValue("name", error.name(), error.getMessage());
-            default -> throw new IllegalStateException("Unexpected validation error: " + error);
+    private void populateNewFormModel(Model model, Long projectId, String addMode) {
+        var availableParticipants = projectMembershipService.findParticipantsAvailableForProject(projectId);
+        model.addAttribute("availableParticipants", availableParticipants);
+        if (!model.containsAttribute("existingParticipantForm")) {
+            model.addAttribute("existingParticipantForm", new ExistingParticipantForm());
+        }
+        if (!model.containsAttribute("participantForm")) {
+            model.addAttribute("participantForm", new ParticipantForm());
+        }
+        if (!model.containsAttribute("addMode")) {
+            String resolvedMode = addMode != null
+                    ? addMode
+                    : (availableParticipants.isEmpty() ? "new" : "existing");
+            model.addAttribute("addMode", resolvedMode);
         }
     }
 }

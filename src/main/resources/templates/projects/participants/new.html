@@ -2,42 +2,113 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title>Новый участник — EliteSeriesPay</title>
+    <title>Добавить участника — EliteSeriesPay</title>
 </head>
 <body>
 <div th:fragment="content">
     <div class="row justify-content-center">
-        <div class="col-lg-6">
+        <div class="col-lg-8">
             <h1 class="mb-4">Добавить участника</h1>
 
-            <form th:action="@{/projects/{projectId}/participants(projectId=${projectId})}"
-                  th:object="${participantForm}" method="post" novalidate>
-                <div class="mb-3">
-                    <label for="vkId" class="form-label">VK ID</label>
-                    <input type="text" class="form-control" id="vkId" th:field="*{vkId}"
-                           th:classappend="${#fields.hasErrors('vkId')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('vkId')}" th:errors="*{vkId}"></div>
+            <fieldset class="mb-4">
+                <legend class="form-label fs-6 fw-semibold">Способ добавления</legend>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="addModeSelector" id="modeExisting"
+                           value="existing"
+                           th:disabled="${#lists.isEmpty(availableParticipants)}"
+                           th:checked="${addMode == 'existing'}">
+                    <label class="form-check-label" for="modeExisting">Существующий участник</label>
                 </div>
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="addModeSelector" id="modeNew"
+                           value="new" th:checked="${addMode == 'new'}">
+                    <label class="form-check-label" for="modeNew">Новый участник</label>
+                </div>
+                <div th:if="${#lists.isEmpty(availableParticipants)}" class="form-text">
+                    Нет доступных участников для выбора — можно создать нового.
+                </div>
+            </fieldset>
 
-                <div class="mb-3">
-                    <label for="name" class="form-label">Имя</label>
-                    <input type="text" class="form-control" id="name" th:field="*{name}"
-                           th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
-                    <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-                </div>
+            <div id="existingPanel" class="card mb-4" th:classappend="${addMode != 'existing'} ? 'd-none'">
+                <div class="card-header">Существующий участник</div>
+                <div class="card-body">
+                    <form th:action="@{/projects/{projectId}/participants/existing(projectId=${projectId})}"
+                          th:object="${existingParticipantForm}" method="post" novalidate>
+                        <div class="mb-3">
+                            <label for="participantId" class="form-label">Участник</label>
+                            <select class="form-select" id="participantId" th:field="*{participantId}"
+                                    th:classappend="${#fields.hasErrors('participantId')} ? 'is-invalid'">
+                                <option value="">Выберите участника</option>
+                                <option th:each="participant : ${availableParticipants}"
+                                        th:value="${participant.id}"
+                                        th:text="${participant.name + ' (' + participant.vkId + ')'}">
+                                    Иван (12345)
+                                </option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('participantId')}"
+                                 th:errors="*{participantId}"></div>
+                        </div>
 
-                <div class="mb-4">
-                    <label for="comment" class="form-label">Комментарий</label>
-                    <textarea class="form-control" id="comment" th:field="*{comment}" rows="3"></textarea>
+                        <button type="submit" class="btn btn-primary">Добавить</button>
+                    </form>
                 </div>
+            </div>
 
-                <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Добавить</button>
-                    <a class="btn btn-outline-secondary" th:href="@{/projects/{projectId}(projectId=${projectId})}">Отмена</a>
+            <div id="newPanel" class="card mb-4" th:classappend="${addMode != 'new'} ? 'd-none'">
+                <div class="card-header">Новый участник</div>
+                <div class="card-body">
+                    <form th:action="@{/projects/{projectId}/participants(projectId=${projectId})}"
+                          th:object="${participantForm}" method="post" novalidate>
+                        <div class="mb-3">
+                            <label for="vkId" class="form-label">VK ID</label>
+                            <input type="text" class="form-control" id="vkId" th:field="*{vkId}"
+                                   th:classappend="${#fields.hasErrors('vkId')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('vkId')}"
+                                 th:errors="*{vkId}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Имя</label>
+                            <input type="text" class="form-control" id="name" th:field="*{name}"
+                                   th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}"
+                                 th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="comment" class="form-label">Комментарий</label>
+                            <textarea class="form-control" id="comment" th:field="*{comment}" rows="3"></textarea>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">Создать и добавить</button>
+                    </form>
                 </div>
-            </form>
+            </div>
+
+            <a class="btn btn-outline-secondary" th:href="@{/projects/{projectId}(projectId=${projectId})}">Отмена</a>
         </div>
     </div>
+
+    <script th:inline="javascript">
+        (function () {
+            const existingPanel = document.getElementById('existingPanel');
+            const newPanel = document.getElementById('newPanel');
+            const modeInputs = document.querySelectorAll('input[name="addModeSelector"]');
+
+            function syncPanels() {
+                const selected = document.querySelector('input[name="addModeSelector"]:checked');
+                const mode = selected ? selected.value : 'new';
+                existingPanel.classList.toggle('d-none', mode !== 'existing');
+                newPanel.classList.toggle('d-none', mode !== 'new');
+            }
+
+            modeInputs.forEach(function (input) {
+                input.addEventListener('change', syncPanels);
+            });
+
+            syncPanels();
+        })();
+    </script>
 </div>
 </body>
 </html>

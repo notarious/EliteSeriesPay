@@ -1,5 +1,6 @@
 package com.eliteseriespay.service;
 
+import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
@@ -7,6 +8,7 @@ import com.eliteseriespay.repository.ParticipantRepository;
 import com.eliteseriespay.util.Texts;
 import com.eliteseriespay.validation.ParticipantValidator;
 import com.eliteseriespay.validation.ValidationError;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +25,16 @@ public class ParticipantService {
     public Participant findById(Long id) {
         return participantRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Participant", id));
+    }
+
+    @Transactional(readOnly = true)
+    public List<Participant> findAllOrderByName() {
+        return participantRepository.findAllByOrderByNameAsc();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Participant> findAvailableForProject(Long projectId) {
+        return participantRepository.findAvailableForProject(projectId, MembershipStatus.ACTIVE);
     }
 
     @Transactional

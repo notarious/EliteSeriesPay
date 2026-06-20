@@ -8,7 +8,9 @@ import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.ProjectMembershipRepository;
 import com.eliteseriespay.validation.ValidationError;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,24 +35,51 @@ public class ProjectMembershipService {
         return projectMembershipRepository.findByProjectIdAndStatus(projectId, MembershipStatus.ACTIVE);
     }
 
+    @Transactional(readOnly = true)
+    public List<ProjectMembership> findActiveByParticipantId(Long participantId) {
+        participantService.findById(participantId);
+        return projectMembershipRepository.findByParticipantIdAndStatus(participantId, MembershipStatus.ACTIVE);
+    }
+
+    @Transactional(readOnly = true)
+    public List<ProjectMembership> findLeftByParticipantId(Long participantId) {
+        participantService.findById(participantId);
+        return projectMembershipRepository.findByParticipantIdAndStatus(participantId, MembershipStatus.LEFT);
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, Long> countActiveProjectsByParticipantId() {
+        return projectMembershipRepository.countGroupedByParticipantId(MembershipStatus.ACTIVE).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+    }
+
     @Transactional
     public ProjectMembership addToProject(Long projectId, String vkId, String name, String comment) {
         Project project = projectService.findById(projectId);
         Participant participant = participantService.findOrCreate(vkId, name, comment);
-        Optional<ProjectMembership> existingMembership = projectMembershipRepository
-                .findByProject_IdAndParticipant_Id(projectId, participant.getId());
+        return activateOrCreateMembership(project, participant);
+    }
 
-        if (existingMembership.isPresent()) {
-            ProjectMembership membership = existingMembership.get();
-            if (membership.getStatus() == MembershipStatus.ACTIVE) {
-                throw new ValidationException(ValidationError.PARTICIPANT_ALREADY_ACTIVE);
-            }
-            membership.markActive();
-            return membership;
-        }
+    @Transactional
+    public ProjectMembership addParticipantToProject(Long projectId, Long participantId) {
+        Project project = projectService.findById(projectId);
+        Participant participant = participantService.findById(participantId);
+        return activateOrCreateMembership(project, participant);
+    }
 
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
-        return projectMembershipRepository.save(membership);
+    @Transactional(readOnly = true)
+    public List<Participant> findParticipantsAvailableForProject(Long projectId) {
+        projectService.findById(projectId);
+        return participantService.findAvailableForProject(projectId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Project> findProjectsAvailableForParticipant(Long participantId) {
+        participantService.findById(participantId);
+        return projectService.findAvailableForParticipant(participantId);
     }
 
     @Transactional(readOnly = true)
@@ -83,5 +112,22 @@ public class ProjectMembershipService {
         }
 
         return membership;
+    }
+
+    private ProjectMembership activateOrCreateMembership(Project project, Participant participant) {
+        Optional<ProjectMembership> existingMembership = projectMembershipRepository
+                .findByProject_IdAndParticipant_Id(project.getId(), participant.getId());
+
+        if (existingMembership.isPresent()) {
+            ProjectMembership membership = existingMembership.get();
+            if (membership.getStatus() == MembershipStatus.ACTIVE) {
+                throw new ValidationException(ValidationError.PARTICIPANT_ALREADY_ACTIVE);
+            }
+            membership.markActive();
+            return membership;
+        }
+
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        return projectMembershipRepository.save(membership);
     }
 }

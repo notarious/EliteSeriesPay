@@ -1,5 +1,6 @@
 package com.eliteseriespay.service;
 
+import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.repository.ProjectRepository;
@@ -22,6 +23,11 @@ public class ProjectService {
     @Transactional(readOnly = true)
     public List<Project> findAll() {
         return projectRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Project> findAvailableForParticipant(Long participantId) {
+        return projectRepository.findAvailableForParticipant(participantId, MembershipStatus.ACTIVE);
     }
 
     @Transactional(readOnly = true)

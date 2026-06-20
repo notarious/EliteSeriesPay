@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title th:text="${participant.name} + ' — EliteSeriesPay'">Участник — EliteSeriesPay</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="mb-1" th:text="${participant.name}">Иван</h1>
+            <p class="text-muted mb-1">
+                VK ID: <span th:text="${participant.vkId}">12345</span>
+            </p>
+            <p class="text-muted mb-0">
+                Комментарий:
+                <span th:text="${participant.comment != null ? participant.comment : '—'}">—</span>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary" th:href="@{/participants}">К списку</a>
+            <a class="btn btn-primary"
+               th:href="@{/participants/{id}/projects/new(id=${participant.id})}">Добавить в проект</a>
+            <a class="btn btn-outline-primary"
+               th:href="@{/participants/{id}/edit(id=${participant.id})}">Изменить</a>
+        </div>
+    </div>
+
+    <h2 class="h4 mb-3">Активные проекты</h2>
+
+    <div th:if="${#lists.isEmpty(activeMemberships)}" class="alert alert-info">
+        Участник не состоит ни в одном активном проекте.
+    </div>
+
+    <div th:unless="${#lists.isEmpty(activeMemberships)}" class="table-responsive mb-4">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Проект</th>
+                <th scope="col" class="text-end">Стоимость эпизода (₽)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="membership : ${activeMemberships}">
+                <td>
+                    <a th:href="@{/projects/{id}(id=${membership.project.id})}"
+                       th:text="${membership.project.name}">Пример проекта</a>
+                </td>
+                <td class="text-end"
+                    th:text="${#numbers.formatDecimal(membership.project.episodeCostRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
+                    1,000.00 ₽
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2 class="h4 mb-3">Покинутые проекты</h2>
+
+    <div th:if="${#lists.isEmpty(leftMemberships)}" class="alert alert-info mb-0">
+        Участник не покидал проекты.
+    </div>
+
+    <div th:unless="${#lists.isEmpty(leftMemberships)}" class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Проект</th>
+                <th scope="col" class="text-end">Стоимость эпизода (₽)</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="membership : ${leftMemberships}">
+                <td>
+                    <a th:href="@{/projects/{id}(id=${membership.project.id})}"
+                       th:text="${membership.project.name}">Пример проекта</a>
+                </td>
+                <td class="text-end"
+                    th:text="${#numbers.formatDecimal(membership.project.episodeCostRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
+                    1,000.00 ₽
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

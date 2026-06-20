@@ -20,4 +20,21 @@ public interface ProjectMembershipRepository extends JpaRepository<ProjectMember
             """)
     List<ProjectMembership> findByProjectIdAndStatus(@Param("projectId") Long projectId,
                                                        @Param("status") MembershipStatus status);
+
+    @Query("""
+            SELECT m FROM ProjectMembership m
+            JOIN FETCH m.project p
+            WHERE m.participant.id = :participantId AND m.status = :status
+            ORDER BY p.name ASC
+            """)
+    List<ProjectMembership> findByParticipantIdAndStatus(@Param("participantId") Long participantId,
+                                                           @Param("status") MembershipStatus status);
+
+    @Query("""
+            SELECT m.participant.id, COUNT(m)
+            FROM ProjectMembership m
+            WHERE m.status = :status
+            GROUP BY m.participant.id
+            """)
+    List<Object[]> countGroupedByParticipantId(@Param("status") MembershipStatus status);
 }
