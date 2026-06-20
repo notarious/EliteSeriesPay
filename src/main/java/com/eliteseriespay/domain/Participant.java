@@ -36,7 +36,8 @@ public class Participant {
         this.comment = comment;
     }
 
-    public void updateDetails(String name, String comment) {
+    public void updateDetails(String vkId, String name, String comment) {
+        this.vkId = vkId;
         this.name = name;
         this.comment = comment;
     }

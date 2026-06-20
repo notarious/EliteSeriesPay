@@ -67,12 +67,12 @@ public class ProjectParticipantController {
         Participant participant = projectMembershipService.findActiveParticipant(projectId, participantId);
 
         ParticipantEditForm participantEditForm = new ParticipantEditForm();
+        participantEditForm.setVkId(participant.getVkId());
         participantEditForm.setName(participant.getName());
         participantEditForm.setComment(participant.getComment());
 
         model.addAttribute("projectId", projectId);
         model.addAttribute("participantId", participantId);
-        model.addAttribute("vkId", participant.getVkId());
         model.addAttribute("participantEditForm", participantEditForm);
         return "projects/participants/edit";
     }
@@ -92,10 +92,11 @@ public class ProjectParticipantController {
             projectMembershipService.updateParticipant(
                     projectId,
                     participantId,
+                    participantEditForm.getVkId(),
                     participantEditForm.getName(),
                     participantEditForm.getComment());
         } catch (ValidationException ex) {
-            rejectValidationError(bindingResult, ex, false);
+            rejectValidationError(bindingResult, ex, true);
             populateEditModel(model, projectId, participantId);
             return "projects/participants/edit";
         }
@@ -131,7 +132,6 @@ public class ProjectParticipantController {
         Participant participant = projectMembershipService.findActiveParticipant(projectId, participantId);
         model.addAttribute("projectId", projectId);
         model.addAttribute("participantId", participantId);
-        model.addAttribute("vkId", participant.getVkId());
     }
 
     private void rejectValidationError(BindingResult bindingResult,
@@ -139,7 +139,7 @@ public class ProjectParticipantController {
                                          boolean includeVkIdErrors) {
         ValidationError error = ex.getError();
         switch (error) {
-            case VK_ID_REQUIRED -> {
+            case VK_ID_REQUIRED, VK_ID_ALREADY_EXISTS -> {
                 if (includeVkIdErrors) {
                     bindingResult.rejectValue("vkId", error.name(), error.getMessage());
                 }

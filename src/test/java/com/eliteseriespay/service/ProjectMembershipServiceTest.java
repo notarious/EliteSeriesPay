@@ -266,12 +266,14 @@ class ProjectMembershipServiceTest {
         ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(participantRepository.findByVkId("67890")).thenReturn(Optional.empty());
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(membership));
 
         Participant result = projectMembershipService.updateParticipant(
-                PROJECT_ID, PARTICIPANT_ID, "Petr", "note");
+                PROJECT_ID, PARTICIPANT_ID, "67890", "Petr", "note");
 
+        assertThat(result.getVkId()).isEqualTo("67890");
         assertThat(result.getName()).isEqualTo("Petr");
         assertThat(result.getComment()).isEqualTo("note");
     }

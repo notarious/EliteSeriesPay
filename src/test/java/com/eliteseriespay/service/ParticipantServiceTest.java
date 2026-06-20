@@ -32,6 +32,7 @@ class ParticipantServiceTest {
 
     @Test
     void create_trimsFieldsAndSavesParticipant() {
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.empty());
         when(participantRepository.save(any(Participant.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Participant created = participantService.create("  12345  ", "  Ivan  ", "  note  ");
@@ -47,6 +48,7 @@ class ParticipantServiceTest {
 
     @Test
     void create_normalizesBlankCommentToNull() {
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.empty());
         when(participantRepository.save(any(Participant.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Participant created = participantService.create("12345", "Ivan", "   ");
@@ -68,6 +70,17 @@ class ParticipantServiceTest {
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PARTICIPANT_NAME_REQUIRED));
+    }
+
+    @Test
+    void create_rejectsDuplicateVkId() {
+        Participant existing = TestEntities.participant(2L, "12345", "Other", null);
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.of(existing));
+
+        assertThatThrownBy(() -> participantService.create("12345", "Ivan", null))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.VK_ID_ALREADY_EXISTS));
     }
 
     @Test
@@ -119,16 +132,49 @@ class ParticipantServiceTest {
     void update_trimsFieldsAndSavesChanges() {
         Participant existing = TestEntities.participant(1L, "12345", "Old name", "old");
         when(participantRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(participantRepository.findByVkId("67890")).thenReturn(Optional.empty());
 
-        Participant updated = participantService.update(1L, "  New name  ", "  new note  ");
+        Participant updated = participantService.update(1L, "  67890  ", "  New name  ", "  new note  ");
 
+        assertThat(updated.getVkId()).isEqualTo("67890");
         assertThat(updated.getName()).isEqualTo("New name");
         assertThat(updated.getComment()).isEqualTo("new note");
     }
 
     @Test
+    void update_allowsSameVkId() {
+        Participant existing = TestEntities.participant(1L, "12345", "Ivan", null);
+        when(participantRepository.findById(1L)).thenReturn(Optional.of(existing));
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.of(existing));
+
+        Participant updated = participantService.update(1L, "12345", "Petr", null);
+
+        assertThat(updated.getVkId()).isEqualTo("12345");
+        assertThat(updated.getName()).isEqualTo("Petr");
+    }
+
+    @Test
+    void update_rejectsBlankVkId() {
+        assertThatThrownBy(() -> participantService.update(1L, "  ", "Ivan", null))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.VK_ID_REQUIRED));
+    }
+
+    @Test
+    void update_rejectsDuplicateVkId() {
+        Participant other = TestEntities.participant(2L, "67890", "Other", null);
+        when(participantRepository.findByVkId("67890")).thenReturn(Optional.of(other));
+
+        assertThatThrownBy(() -> participantService.update(1L, "67890", "Ivan", null))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.VK_ID_ALREADY_EXISTS));
+    }
+
+    @Test
     void update_rejectsBlankName() {
-        assertThatThrownBy(() -> participantService.update(1L, "  ", null))
+        assertThatThrownBy(() -> participantService.update(1L, "12345", "  ", null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PARTICIPANT_NAME_REQUIRED));
@@ -138,7 +184,7 @@ class ParticipantServiceTest {
     void update_throwsWhenParticipantNotFound() {
         when(participantRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> participantService.update(99L, "Name", null))
+        assertThatThrownBy(() -> participantService.update(99L, "12345", "Name", null))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Participant not found: 99");
     }

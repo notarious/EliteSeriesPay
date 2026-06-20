@@ -59,9 +59,9 @@ public class ProjectMembershipService {
     }
 
     @Transactional
-    public Participant updateParticipant(Long projectId, Long participantId, String name, String comment) {
+    public Participant updateParticipant(Long projectId, Long participantId, String vkId, String name, String comment) {
         requireActiveMembership(projectId, participantId);
-        return participantService.update(participantId, name, comment);
+        return participantService.update(participantId, vkId, name, comment);
     }
 
     @Transactional

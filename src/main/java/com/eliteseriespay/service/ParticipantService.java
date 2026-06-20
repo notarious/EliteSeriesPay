@@ -2,9 +2,11 @@ package com.eliteseriespay.service;
 
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.exception.NotFoundException;
+import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.ParticipantRepository;
 import com.eliteseriespay.util.Texts;
 import com.eliteseriespay.validation.ParticipantValidator;
+import com.eliteseriespay.validation.ValidationError;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,23 +42,34 @@ public class ParticipantService {
         String normalizedName = Texts.trim(name);
         String normalizedComment = Texts.trimToNull(comment);
         validateParticipant(normalizedVkId, normalizedName);
+        ensureVkIdAvailable(normalizedVkId, null);
         return createParticipant(normalizedVkId, normalizedName, normalizedComment);
     }
 
     @Transactional
-    public Participant update(Long id, String name, String comment) {
+    public Participant update(Long id, String vkId, String name, String comment) {
+        String normalizedVkId = Texts.trim(vkId);
         String normalizedName = Texts.trim(name);
         String normalizedComment = Texts.trimToNull(comment);
-        ParticipantValidator.validateName(normalizedName);
+        validateParticipant(normalizedVkId, normalizedName);
+        ensureVkIdAvailable(normalizedVkId, id);
 
         Participant participant = findById(id);
-        participant.updateDetails(normalizedName, normalizedComment);
+        participant.updateDetails(normalizedVkId, normalizedName, normalizedComment);
         return participant;
     }
 
     private void validateParticipant(String vkId, String name) {
         ParticipantValidator.validateVkId(vkId);
         ParticipantValidator.validateName(name);
+    }
+
+    private void ensureVkIdAvailable(String vkId, Long participantId) {
+        participantRepository.findByVkId(vkId)
+                .filter(existing -> participantId == null || !existing.getId().equals(participantId))
+                .ifPresent(existing -> {
+                    throw new ValidationException(ValidationError.VK_ID_ALREADY_EXISTS);
+                });
     }
 
     private Participant createParticipant(String vkId, String name, String comment) {

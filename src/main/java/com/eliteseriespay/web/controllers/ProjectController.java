@@ -51,13 +51,12 @@ public class ProjectController {
         }
 
         try {
-            projectService.create(projectForm.getName(), projectForm.getEpisodeCostRub());
+            Project project = projectService.create(projectForm.getName(), projectForm.getEpisodeCostRub());
+            return "redirect:/projects/" + project.getId();
         } catch (ValidationException ex) {
             rejectValidationError(bindingResult, ex);
             return "projects/new";
         }
-
-        return "redirect:/projects";
     }
 
     @GetMapping("/{id}")
@@ -99,7 +98,7 @@ public class ProjectController {
             return "projects/edit";
         }
 
-        return "redirect:/projects";
+        return "redirect:/projects/" + id;
     }
 
     @ExceptionHandler(NotFoundException.class)

@@ -8,6 +8,9 @@ import lombok.Setter;
 @Setter
 public class ParticipantEditForm {
 
+    @NotBlank(message = "Укажите VK ID")
+    private String vkId;
+
     @NotBlank(message = "Укажите имя")
     private String name;
 

@@ -14,7 +14,9 @@
                   th:object="${participantEditForm}" method="post" novalidate>
                 <div class="mb-3">
                     <label for="vkId" class="form-label">VK ID</label>
-                    <input type="text" class="form-control" id="vkId" th:value="${vkId}" readonly disabled>
+                    <input type="text" class="form-control" id="vkId" th:field="*{vkId}"
+                           th:classappend="${#fields.hasErrors('vkId')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('vkId')}" th:errors="*{vkId}"></div>
                 </div>
 
                 <div class="mb-3">

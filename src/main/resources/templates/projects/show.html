@@ -36,16 +36,16 @@
         <table class="table table-striped align-middle">
             <thead>
             <tr>
-                <th scope="col">VK ID</th>
                 <th scope="col">Имя</th>
+                <th scope="col">VK ID</th>
                 <th scope="col">Комментарий</th>
                 <th scope="col" class="text-end">Действия</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="membership : ${memberships}">
-                <td th:text="${membership.participant.vkId}">12345</td>
                 <td th:text="${membership.participant.name}">Иван</td>
+                <td th:text="${membership.participant.vkId}">12345</td>
                 <td th:text="${membership.participant.comment != null ? membership.participant.comment : '—'}">—</td>
                 <td class="text-end">
                     <div class="d-inline-flex gap-2">
