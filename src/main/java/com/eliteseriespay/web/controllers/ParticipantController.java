@@ -4,6 +4,7 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.service.ParticipantService;
+import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.web.FormErrorMapper;
 import com.eliteseriespay.web.form.AddParticipantToProjectForm;
@@ -28,13 +29,16 @@ public class ParticipantController {
 
     private final ParticipantService participantService;
     private final ProjectMembershipService projectMembershipService;
+    private final PaymentService paymentService;
     private final FormErrorMapper formErrorMapper;
 
     public ParticipantController(ParticipantService participantService,
                                  ProjectMembershipService projectMembershipService,
+                                 PaymentService paymentService,
                                  FormErrorMapper formErrorMapper) {
         this.participantService = participantService;
         this.projectMembershipService = projectMembershipService;
+        this.paymentService = paymentService;
         this.formErrorMapper = formErrorMapper;
     }
 
@@ -80,6 +84,7 @@ public class ParticipantController {
         model.addAttribute("participant", participant);
         model.addAttribute("activeMemberships", projectMembershipService.findActiveByParticipantId(id));
         model.addAttribute("leftMemberships", projectMembershipService.findLeftByParticipantId(id));
+        model.addAttribute("paymentSummary", paymentService.getParticipantPaymentSummary(id));
         return "participants/show";
     }
 

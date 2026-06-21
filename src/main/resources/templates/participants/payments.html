@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title th:text="'История платежей — ' + ${participant.name} + ' — EliteSeriesPay'">
+        История платежей — EliteSeriesPay
+    </title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="mb-1">История платежей</h1>
+            <p class="text-muted mb-0">
+                Участник:
+                <a th:href="@{/participants/{id}(id=${participant.id})}" th:text="${participant.name}">Иван</a>
+            </p>
+        </div>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary"
+               th:href="@{/participants/{id}(id=${participant.id})}">К участнику</a>
+            <a th:if="${!#lists.isEmpty(activeMemberships)}" class="btn btn-success"
+               th:href="@{/participants/{id}/payments/new(id=${participant.id})}">Добавить платёж</a>
+        </div>
+    </div>
+
+    <div th:if="${#lists.isEmpty(payments)}" class="alert alert-info mb-0">
+        Платежей пока нет.
+    </div>
+
+    <div th:unless="${#lists.isEmpty(payments)}" class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Дата</th>
+                <th scope="col">Проект</th>
+                <th scope="col">Источник</th>
+                <th scope="col" class="text-end">Сумма</th>
+                <th scope="col" class="text-end">Курс</th>
+                <th scope="col" class="text-end">Сумма (₽)</th>
+                <th scope="col" class="text-end">Комиссия</th>
+                <th scope="col" class="text-end">Чистая сумма (₽)</th>
+                <th scope="col">Комментарий</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="payment : ${payments}">
+                <td th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy')}">01.01.2026</td>
+                <td>
+                    <a th:href="@{/projects/{id}(id=${payment.project.id})}"
+                       th:text="${payment.project.name}">Пример проекта</a>
+                </td>
+                <td th:text="${payment.source.displayName}">VK Donut</td>
+                <td class="text-end">
+                    <span th:text="${#numbers.formatDecimal(payment.amountOriginal, 1, 'COMMA', 2, 'POINT')}">100.00</span>
+                    <span th:text="' ' + ${payment.currency.displayName}"> ₽</span>
+                </td>
+                <td class="text-end"
+                    th:text="${#numbers.formatDecimal(payment.exchangeRate, 1, 'COMMA', 4, 'POINT')}">1.0000</td>
+                <td class="text-end"
+                    th:text="${#numbers.formatDecimal(payment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">100.00 ₽</td>
+                <td class="text-end" th:text="${payment.feePercent} + '%'">10%</td>
+                <td class="text-end"
+                    th:text="${#numbers.formatDecimal(payment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">90.00 ₽</td>
+                <td th:text="${payment.comment != null ? payment.comment : '—'}">—</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

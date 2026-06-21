@@ -3,6 +3,43 @@
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
     <title th:text="${project.name} + ' — EliteSeriesPay'">Проект — EliteSeriesPay</title>
+    <style>
+        .project-participants-table {
+            table-layout: fixed;
+        }
+
+        .project-participants-table .col-vk-id {
+            width: 6rem;
+        }
+
+        .project-participants-table .col-last-payment {
+            width: 5.25rem;
+        }
+
+        .project-participants-table th.col-last-payment {
+            white-space: normal;
+            line-height: 1.15;
+            font-size: 0.875rem;
+        }
+
+        .project-participants-table td.col-last-payment {
+            white-space: nowrap;
+        }
+
+        .project-participants-table .col-amount {
+            width: 6rem;
+        }
+
+        .project-participants-table td.col-amount,
+        .project-participants-table th.col-actions,
+        .project-participants-table td.col-actions {
+            white-space: nowrap;
+        }
+
+        .project-participants-table .col-actions {
+            width: 5.25rem;
+        }
+    </style>
 </head>
 <body>
 <div th:fragment="content">
@@ -33,31 +70,48 @@
     </div>
 
     <div th:unless="${#lists.isEmpty(memberships)}" class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-striped align-middle project-participants-table">
             <thead>
             <tr>
                 <th scope="col">Имя</th>
-                <th scope="col">VK ID</th>
-                <th scope="col">Комментарий</th>
-                <th scope="col" class="text-end">Действия</th>
+                <th scope="col" class="col-vk-id">VK ID</th>
+                <th scope="col" class="col-last-payment">Последний платёж</th>
+                <th scope="col" class="col-amount text-end">Сумма</th>
+                <th scope="col" class="col-actions text-end">Действия</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="membership : ${memberships}">
-                <td th:text="${membership.participant.name}">Иван</td>
-                <td th:text="${membership.participant.vkId}">12345</td>
-                <td th:text="${membership.participant.comment != null ? membership.participant.comment : '—'}">—</td>
-                <td class="text-end">
-                    <div class="d-inline-flex gap-2">
+                <td class="text-truncate">
+                    <a th:href="@{/participants/{id}(id=${membership.participant.id})}"
+                       th:text="${membership.participant.name}">Иван</a>
+                </td>
+                <td class="col-vk-id" th:text="${membership.participant.vkId}">12345</td>
+                <td class="col-last-payment" th:with="latestPayment=${latestPayments[membership.participant.id]}">
+                    <span th:if="${latestPayment != null}"
+                          th:text="${#temporals.format(latestPayment.paymentDate, 'dd.MM.yyyy')}">01.01.2026</span>
+                    <span th:if="${latestPayment == null}">—</span>
+                </td>
+                <td class="col-amount text-end" th:with="latestPayment=${latestPayments[membership.participant.id]}">
+                    <span th:if="${latestPayment != null}"
+                          th:text="${#numbers.formatDecimal(latestPayment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
+                        90.00 ₽
+                    </span>
+                    <span th:if="${latestPayment == null}">—</span>
+                </td>
+                <td class="col-actions text-end">
+                    <div class="d-inline-flex gap-1">
                         <a class="btn btn-sm btn-outline-primary"
-                           th:href="@{/projects/{projectId}/participants/{participantId}/edit(projectId=${project.id}, participantId=${membership.participant.id})}">
-                            Изменить
+                           th:href="@{/projects/{projectId}/participants/{participantId}/edit(projectId=${project.id}, participantId=${membership.participant.id})}"
+                           title="Изменить" aria-label="Изменить">
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
                         </a>
                         <form th:action="@{/projects/{projectId}/participants/{participantId}/remove(projectId=${project.id}, participantId=${membership.participant.id})}"
                               method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    title="Исключить" aria-label="Исключить"
                                     onclick="return confirm('Исключить участника из проекта?');">
-                                Исключить
+                                <i class="bi bi-person-x" aria-hidden="true"></i>
                             </button>
                         </form>
                     </div>

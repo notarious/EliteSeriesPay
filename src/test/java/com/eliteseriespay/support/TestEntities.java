@@ -1,8 +1,12 @@
 package com.eliteseriespay.support;
 
 import com.eliteseriespay.domain.Participant;
+import com.eliteseriespay.domain.Payment;
+import com.eliteseriespay.domain.PaymentCurrency;
+import com.eliteseriespay.domain.PaymentSource;
 import com.eliteseriespay.domain.Project;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import org.springframework.test.util.ReflectionTestUtils;
 
 public final class TestEntities {
@@ -24,5 +28,24 @@ public final class TestEntities {
         Participant participant = new Participant(vkId, name, comment);
         setId(participant, id);
         return participant;
+    }
+
+    public static Payment payment(long id,
+                                  Participant participant,
+                                  Project project,
+                                  LocalDate paymentDate,
+                                  PaymentSource source,
+                                  BigDecimal amountOriginal,
+                                  PaymentCurrency currency,
+                                  BigDecimal exchangeRate,
+                                  BigDecimal amountRub,
+                                  int feePercent,
+                                  BigDecimal netAmountRub,
+                                  String comment) {
+        Payment payment = new Payment(
+                participant, project, paymentDate, source, amountOriginal, currency,
+                exchangeRate, amountRub, feePercent, netAmountRub, comment);
+        setId(payment, id);
+        return payment;
     }
 }

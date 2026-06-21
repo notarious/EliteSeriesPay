@@ -3,6 +3,7 @@ package com.eliteseriespay.web.controllers;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
 import com.eliteseriespay.web.FormErrorMapper;
@@ -24,13 +25,16 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ProjectMembershipService projectMembershipService;
+    private final PaymentService paymentService;
     private final FormErrorMapper formErrorMapper;
 
     public ProjectController(ProjectService projectService,
                              ProjectMembershipService projectMembershipService,
+                             PaymentService paymentService,
                              FormErrorMapper formErrorMapper) {
         this.projectService = projectService;
         this.projectMembershipService = projectMembershipService;
+        this.paymentService = paymentService;
         this.formErrorMapper = formErrorMapper;
     }
 
@@ -67,6 +71,7 @@ public class ProjectController {
         Project project = projectService.findById(id);
         model.addAttribute("project", project);
         model.addAttribute("memberships", projectMembershipService.findActiveByProjectId(id));
+        model.addAttribute("latestPayments", paymentService.findLatestPaymentsByProjectId(id));
         return "projects/show";
     }
 

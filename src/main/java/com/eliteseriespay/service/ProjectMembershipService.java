@@ -83,23 +83,7 @@ public class ProjectMembershipService {
     }
 
     @Transactional(readOnly = true)
-    public Participant findActiveParticipant(Long projectId, Long participantId) {
-        return requireActiveMembership(projectId, participantId).getParticipant();
-    }
-
-    @Transactional
-    public Participant updateParticipant(Long projectId, Long participantId, String vkId, String name, String comment) {
-        requireActiveMembership(projectId, participantId);
-        return participantService.update(participantId, vkId, name, comment);
-    }
-
-    @Transactional
-    public void removeFromProject(Long projectId, Long participantId) {
-        ProjectMembership membership = requireActiveMembership(projectId, participantId);
-        membership.markLeft();
-    }
-
-    private ProjectMembership requireActiveMembership(Long projectId, Long participantId) {
+    public ProjectMembership getActiveMembership(Long projectId, Long participantId) {
         projectService.findById(projectId);
         participantService.findById(participantId);
 
@@ -112,6 +96,23 @@ public class ProjectMembershipService {
         }
 
         return membership;
+    }
+
+    @Transactional(readOnly = true)
+    public Participant findActiveParticipant(Long projectId, Long participantId) {
+        return getActiveMembership(projectId, participantId).getParticipant();
+    }
+
+    @Transactional
+    public Participant updateParticipant(Long projectId, Long participantId, String vkId, String name, String comment) {
+        getActiveMembership(projectId, participantId);
+        return participantService.update(participantId, vkId, name, comment);
+    }
+
+    @Transactional
+    public void removeFromProject(Long projectId, Long participantId) {
+        ProjectMembership membership = getActiveMembership(projectId, participantId);
+        membership.markLeft();
     }
 
     private ProjectMembership activateOrCreateMembership(Project project, Participant participant) {

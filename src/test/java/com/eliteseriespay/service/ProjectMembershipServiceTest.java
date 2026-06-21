@@ -405,6 +405,45 @@ class ProjectMembershipServiceTest {
     }
 
     @Test
+    void getActiveMembership_returnsMembershipWhenActive() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.of(membership));
+
+        ProjectMembership result = projectMembershipService.getActiveMembership(PROJECT_ID, PARTICIPANT_ID);
+
+        assertThat(result).isSameAs(membership);
+    }
+
+    @Test
+    void getActiveMembership_throwsWhenMembershipMissingOrLeft() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> projectMembershipService.getActiveMembership(PROJECT_ID, PARTICIPANT_ID))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.NOT_AN_ACTIVE_MEMBER));
+
+        ProjectMembership leftMembership = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.of(leftMembership));
+
+        assertThatThrownBy(() -> projectMembershipService.getActiveMembership(PROJECT_ID, PARTICIPANT_ID))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.NOT_AN_ACTIVE_MEMBER));
+    }
+
+    @Test
     void findProjectsAvailableForParticipant_excludesActiveProjects() {
         Project availableProject = TestEntities.project(2L, "Other", new BigDecimal("500.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
