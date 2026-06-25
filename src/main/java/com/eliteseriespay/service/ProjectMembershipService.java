@@ -10,6 +10,7 @@ import com.eliteseriespay.validation.ValidationError;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Collection;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,6 +51,19 @@ public class ProjectMembershipService {
     @Transactional(readOnly = true)
     public Map<Long, Long> countActiveProjectsByParticipantId() {
         return projectMembershipRepository.countGroupedByParticipantId(MembershipStatus.ACTIVE).stream()
+                .collect(Collectors.toMap(
+                        row -> (Long) row[0],
+                        row -> (Long) row[1]
+                ));
+    }
+
+    @Transactional(readOnly = true)
+    public Map<Long, Long> countActiveProjectsByParticipantIds(Collection<Long> participantIds) {
+        if (participantIds.isEmpty()) {
+            return Map.of();
+        }
+        return projectMembershipRepository
+                .countGroupedByParticipantIdIn(MembershipStatus.ACTIVE, participantIds).stream()
                 .collect(Collectors.toMap(
                         row -> (Long) row[0],
                         row -> (Long) row[1]

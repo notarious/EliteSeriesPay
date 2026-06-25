@@ -45,7 +45,7 @@ class PaymentRepositoryLocalDateTest {
                 participant,
                 project,
                 paymentDate,
-                PaymentSource.OTHER,
+                PaymentSource.MANUAL,
                 new BigDecimal("500.00"),
                 PaymentCurrency.RUB,
                 new BigDecimal("1.0000"),

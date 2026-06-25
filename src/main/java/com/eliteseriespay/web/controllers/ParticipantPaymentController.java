@@ -6,6 +6,7 @@ import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.service.PaymentFormDefaults;
 import com.eliteseriespay.service.ParticipantService;
 import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
@@ -14,6 +15,8 @@ import com.eliteseriespay.web.form.PaymentForm;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -58,7 +61,12 @@ public class ParticipantPaymentController {
             return "redirect:/participants/" + participantId;
         }
 
-        PaymentForm paymentForm = new PaymentForm();
+        Set<Long> activeProjectIds = activeMemberships.stream()
+                .map(membership -> membership.getProject().getId())
+                .collect(Collectors.toSet());
+
+        PaymentForm paymentForm = toPaymentForm(
+                paymentService.getNewPaymentFormDefaults(participantId, activeProjectIds));
         paymentForm.setPaymentDate(LocalDate.now());
         populateFormModel(model, participantId, activeMemberships, paymentForm);
         return "participants/payment-new";
@@ -206,6 +214,17 @@ public class ParticipantPaymentController {
         paymentForm.setExchangeRate(payment.getCurrency() == com.eliteseriespay.domain.PaymentCurrency.RUB
                 ? null : payment.getExchangeRate());
         paymentForm.setComment(payment.getComment());
+        return paymentForm;
+    }
+
+    private PaymentForm toPaymentForm(PaymentFormDefaults defaults) {
+        PaymentForm paymentForm = new PaymentForm();
+        paymentForm.setPaymentDate(defaults.paymentDate());
+        paymentForm.setProjectId(defaults.projectId());
+        paymentForm.setSource(defaults.source());
+        paymentForm.setAmountOriginal(defaults.amountOriginal());
+        paymentForm.setCurrency(defaults.currency());
+        paymentForm.setExchangeRate(defaults.exchangeRate());
         return paymentForm;
     }
 

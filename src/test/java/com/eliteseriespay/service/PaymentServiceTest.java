@@ -29,6 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -102,7 +103,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Payment payment = paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("500.00"), PaymentCurrency.RUB, null, null);
 
         assertThat(payment.getExchangeRate()).isEqualByComparingTo("1.0000");
@@ -119,7 +120,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Payment payment = paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("10.00"), PaymentCurrency.USD, new BigDecimal("90.5"), null);
 
         assertThat(payment.getExchangeRate()).isEqualByComparingTo("90.5000");
@@ -145,7 +146,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Payment payment = paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("1000.00"), PaymentCurrency.RUB, null, null);
 
         assertThat(payment.getFeePercent()).isZero();
@@ -160,7 +161,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, null, null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
@@ -173,7 +174,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Payment payment = paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, null, "note");
 
         assertThat(payment.getParticipant()).isEqualTo(participant);
@@ -187,7 +188,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Payment payment = paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("99.99"), null);
 
         assertThat(payment.getExchangeRate()).isEqualByComparingTo("1.0000");
@@ -200,7 +201,7 @@ class PaymentServiceTest {
         when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         Payment payment = paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, null, "   ");
 
         assertThat(payment.getComment()).isNull();
@@ -211,7 +212,7 @@ class PaymentServiceTest {
         stubActiveMembership();
 
         assertThatThrownBy(() -> paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 null, PaymentCurrency.RUB, null, null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
@@ -223,7 +224,7 @@ class PaymentServiceTest {
         stubActiveMembership();
 
         assertThatThrownBy(() -> paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 BigDecimal.ZERO, PaymentCurrency.RUB, null, null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
@@ -235,7 +236,7 @@ class PaymentServiceTest {
         stubActiveMembership();
 
         assertThatThrownBy(() -> paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("10.00"), PaymentCurrency.USD, null, null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
@@ -247,7 +248,7 @@ class PaymentServiceTest {
         stubActiveMembership();
 
         assertThatThrownBy(() -> paymentService.create(
-                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("10.00"), PaymentCurrency.EUR, BigDecimal.ZERO, null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
@@ -257,11 +258,11 @@ class PaymentServiceTest {
     @Test
     void findByParticipantId_returnsPaymentsNewestFirst() {
         Payment older = TestEntities.payment(
-                1L, participant, project, LocalDate.of(2026, 1, 1), PaymentSource.OTHER,
+                1L, participant, project, LocalDate.of(2026, 1, 1), PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
         Payment newer = TestEntities.payment(
-                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.OTHER,
+                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.MANUAL,
                 new BigDecimal("200.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("200.00"), 0, new BigDecimal("200.00"), null);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -285,11 +286,11 @@ class PaymentServiceTest {
     @Test
     void getParticipantPaymentSummary_returnsLatestAndTotal() {
         Payment older = TestEntities.payment(
-                1L, participant, project, LocalDate.of(2026, 1, 1), PaymentSource.OTHER,
+                1L, participant, project, LocalDate.of(2026, 1, 1), PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
         Payment newer = TestEntities.payment(
-                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.OTHER,
+                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.MANUAL,
                 new BigDecimal("200.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("200.00"), 0, new BigDecimal("200.00"), null);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -332,11 +333,11 @@ class PaymentServiceTest {
     void findLatestPaymentsByProjectId_returnsLatestPaymentPerParticipant() {
         Participant otherParticipant = TestEntities.participant(11L, "67890", "Anna", null);
         Payment latestForParticipant = TestEntities.payment(
-                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.OTHER,
+                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.MANUAL,
                 new BigDecimal("200.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("200.00"), 0, new BigDecimal("200.00"), null);
         Payment latestForOtherParticipant = TestEntities.payment(
-                3L, otherParticipant, project, LocalDate.of(2026, 3, 1), PaymentSource.OTHER,
+                3L, otherParticipant, project, LocalDate.of(2026, 3, 1), PaymentSource.MANUAL,
                 new BigDecimal("150.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("150.00"), 0, new BigDecimal("150.00"), null);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
@@ -353,7 +354,7 @@ class PaymentServiceTest {
     @Test
     void update_recalculatesAmountsOnSave() {
         Payment existing = TestEntities.payment(
-                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                5L, participant, project, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -375,7 +376,7 @@ class PaymentServiceTest {
     @Test
     void update_rejectsVoidedPayment() {
         Payment voided = TestEntities.payment(
-                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                5L, participant, project, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null, PaymentStatus.VOIDED);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -383,7 +384,7 @@ class PaymentServiceTest {
                 .thenReturn(Optional.of(voided));
 
         assertThatThrownBy(() -> paymentService.update(
-                PARTICIPANT_ID, 5L, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                PARTICIPANT_ID, 5L, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, null, null))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
@@ -393,7 +394,7 @@ class PaymentServiceTest {
     @Test
     void voidPayment_marksPaymentAsVoided() {
         Payment existing = TestEntities.payment(
-                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                5L, participant, project, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -408,7 +409,7 @@ class PaymentServiceTest {
     @Test
     void voidPayment_rejectsAlreadyVoided() {
         Payment voided = TestEntities.payment(
-                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                5L, participant, project, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null, PaymentStatus.VOIDED);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -424,11 +425,11 @@ class PaymentServiceTest {
     @Test
     void getParticipantPaymentSummary_excludesVoidedPayments() {
         Payment voidedLatest = TestEntities.payment(
-                3L, participant, project, LocalDate.of(2026, 12, 1), PaymentSource.OTHER,
+                3L, participant, project, LocalDate.of(2026, 12, 1), PaymentSource.MANUAL,
                 new BigDecimal("500.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("500.00"), 0, new BigDecimal("500.00"), null, PaymentStatus.VOIDED);
         Payment activeOlder = TestEntities.payment(
-                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.OTHER,
+                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.MANUAL,
                 new BigDecimal("200.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("200.00"), 0, new BigDecimal("200.00"), null);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
@@ -444,6 +445,81 @@ class PaymentServiceTest {
         assertThat(summary.latestAmountRub()).isEqualByComparingTo("200.00");
         assertThat(summary.totalNetAmountRub()).isEqualByComparingTo("200.00");
         assertThat(voidedLatest.getStatus()).isEqualTo(PaymentStatus.VOIDED);
+    }
+
+    @Test
+    void getNewPaymentFormDefaults_returnsTodayWhenNoActivePayments() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        PaymentFormDefaults defaults = paymentService.getNewPaymentFormDefaults(
+                PARTICIPANT_ID, Set.of(PROJECT_ID));
+
+        assertThat(defaults.paymentDate()).isEqualTo(LocalDate.now());
+        assertThat(defaults.projectId()).isNull();
+        assertThat(defaults.source()).isNull();
+        assertThat(defaults.amountOriginal()).isNull();
+        assertThat(defaults.currency()).isNull();
+        assertThat(defaults.exchangeRate()).isNull();
+    }
+
+    @Test
+    void getNewPaymentFormDefaults_prefillsFromLatestActivePayment() {
+        Payment latestActive = TestEntities.payment(
+                2L, participant, project, LocalDate.of(2026, 5, 1), PaymentSource.VK_DONUT,
+                new BigDecimal("250.00"), PaymentCurrency.USD, new BigDecimal("90.5000"),
+                new BigDecimal("22625.00"), 10, new BigDecimal("20362.50"), "keep me out");
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
+                .thenReturn(Optional.of(latestActive));
+
+        PaymentFormDefaults defaults = paymentService.getNewPaymentFormDefaults(
+                PARTICIPANT_ID, Set.of(PROJECT_ID));
+
+        assertThat(defaults.paymentDate()).isEqualTo(LocalDate.now());
+        assertThat(defaults.projectId()).isEqualTo(PROJECT_ID);
+        assertThat(defaults.source()).isEqualTo(PaymentSource.VK_DONUT);
+        assertThat(defaults.amountOriginal()).isEqualByComparingTo("250.00");
+        assertThat(defaults.currency()).isEqualTo(PaymentCurrency.USD);
+        assertThat(defaults.exchangeRate()).isEqualByComparingTo("90.5000");
+    }
+
+    @Test
+    void getNewPaymentFormDefaults_omitsProjectWhenMembershipNotActive() {
+        Payment latestActive = TestEntities.payment(
+                2L, participant, project, LocalDate.of(2026, 5, 1), PaymentSource.MANUAL,
+                new BigDecimal("150.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("150.00"), 0, new BigDecimal("150.00"), null);
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
+                .thenReturn(Optional.of(latestActive));
+
+        PaymentFormDefaults defaults = paymentService.getNewPaymentFormDefaults(
+                PARTICIPANT_ID, Set.of(99L));
+
+        assertThat(defaults.projectId()).isNull();
+        assertThat(defaults.source()).isEqualTo(PaymentSource.MANUAL);
+        assertThat(defaults.amountOriginal()).isEqualByComparingTo("150.00");
+        assertThat(defaults.currency()).isEqualTo(PaymentCurrency.RUB);
+        assertThat(defaults.exchangeRate()).isNull();
+    }
+
+    @Test
+    void getNewPaymentFormDefaults_ignoresVoidedPayments() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
+                .thenReturn(Optional.empty());
+
+        PaymentFormDefaults defaults = paymentService.getNewPaymentFormDefaults(
+                PARTICIPANT_ID, Set.of(PROJECT_ID));
+
+        assertThat(defaults.projectId()).isNull();
+        assertThat(defaults.amountOriginal()).isNull();
     }
 
     private void stubDefaultSettings() {

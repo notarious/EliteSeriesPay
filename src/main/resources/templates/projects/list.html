@@ -34,8 +34,18 @@
                     1,000.00 ₽
                 </td>
                 <td class="text-end">
-                    <a class="btn btn-sm btn-outline-primary" th:href="@{/projects/{id}(id=${project.id})}">Открыть</a>
-                    <a class="btn btn-sm btn-outline-secondary" th:href="@{/projects/{id}/edit(id=${project.id})}">Изменить</a>
+                    <div class="d-inline-flex gap-1">
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:href="@{/projects/{id}(id=${project.id})}"
+                           title="Открыть" aria-label="Открыть">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </a>
+                        <a class="btn btn-sm btn-outline-primary"
+                           th:href="@{/projects/{id}/edit(id=${project.id})}"
+                           title="Изменить" aria-label="Изменить">
+                            <i class="bi bi-pencil" aria-hidden="true"></i>
+                        </a>
+                    </div>
                 </td>
             </tr>
             </tbody>

@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
@@ -78,6 +79,17 @@ public class PaymentService {
         projectService.findById(projectId);
         return paymentRepository.findLatestActivePaymentsByProjectId(projectId).stream()
                 .collect(Collectors.toMap(payment -> payment.getParticipant().getId(), Function.identity()));
+    }
+
+    @Transactional(readOnly = true)
+    public PaymentFormDefaults getNewPaymentFormDefaults(Long participantId, Set<Long> activeProjectIds) {
+        participantService.findById(participantId);
+
+        LocalDate paymentDate = LocalDate.now();
+        return paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                        participantId, PaymentStatus.ACTIVE)
+                .map(payment -> buildDefaultsFromLatestActivePayment(payment, activeProjectIds, paymentDate))
+                .orElseGet(() -> emptyPaymentFormDefaults(paymentDate));
     }
 
     @Transactional
@@ -167,5 +179,28 @@ public class PaymentService {
         if (payment.getStatus() == PaymentStatus.VOIDED) {
             throw new ValidationException(ValidationError.PAYMENT_VOIDED);
         }
+    }
+
+    private PaymentFormDefaults buildDefaultsFromLatestActivePayment(Payment payment,
+                                                                     Set<Long> activeProjectIds,
+                                                                     LocalDate paymentDate) {
+        Long projectId = activeProjectIds.contains(payment.getProject().getId())
+                ? payment.getProject().getId()
+                : null;
+        BigDecimal exchangeRate = payment.getCurrency() == PaymentCurrency.RUB
+                ? null
+                : payment.getExchangeRate();
+
+        return new PaymentFormDefaults(
+                paymentDate,
+                projectId,
+                payment.getSource(),
+                payment.getAmountOriginal(),
+                payment.getCurrency(),
+                exchangeRate);
+    }
+
+    private PaymentFormDefaults emptyPaymentFormDefaults(LocalDate paymentDate) {
+        return new PaymentFormDefaults(paymentDate, null, null, null, null, null);
     }
 }

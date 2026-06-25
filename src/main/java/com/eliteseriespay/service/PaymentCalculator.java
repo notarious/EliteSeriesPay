@@ -55,7 +55,10 @@ public class PaymentCalculator {
     }
 
     private int calculateFeePercent(PaymentSource source, int vkDonutFeePercent) {
-        return source == PaymentSource.VK_DONUT ? vkDonutFeePercent : 0;
+        return switch (source) {
+            case VK_DONUT -> vkDonutFeePercent;
+            case MANUAL -> 0;
+        };
     }
 
     private BigDecimal calculateNetAmountRub(BigDecimal amountRub, int feePercent) {

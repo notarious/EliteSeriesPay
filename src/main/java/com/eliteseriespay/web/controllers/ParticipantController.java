@@ -12,8 +12,8 @@ import com.eliteseriespay.web.form.AddParticipantToProjectForm;
 import com.eliteseriespay.web.form.ParticipantEditForm;
 import com.eliteseriespay.web.form.ParticipantForm;
 import jakarta.validation.Valid;
-import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequestMapping("/participants")
@@ -44,12 +45,21 @@ public class ParticipantController {
     }
 
     @GetMapping
-    public String list(Model model) {
-        List<Participant> participants = participantService.findAllOrderByName();
-        Map<Long, Long> activeProjectCounts = projectMembershipService.countActiveProjectsByParticipantId();
+    public String list(@RequestParam(value = "q", required = false) String searchQuery,
+                       @RequestParam(value = "page", defaultValue = "0") int page,
+                       @RequestParam(value = "size", defaultValue = "50") int size,
+                       Model model) {
+        Page<Participant> participantsPage = participantService.findParticipants(searchQuery, page, size);
+        Map<Long, Long> activeProjectCounts = projectMembershipService.countActiveProjectsByParticipantIds(
+                participantsPage.getContent().stream().map(Participant::getId).toList());
 
-        model.addAttribute("participants", participants);
+        model.addAttribute("participantsPage", participantsPage);
         model.addAttribute("activeProjectCounts", activeProjectCounts);
+        model.addAttribute("searchQuery", searchQuery == null ? "" : searchQuery);
+        model.addAttribute("pageSize", ParticipantService.ALLOWED_PAGE_SIZES.contains(size)
+                ? size
+                : ParticipantService.DEFAULT_PAGE_SIZE);
+        model.addAttribute("allowedPageSizes", ParticipantService.ALLOWED_PAGE_SIZES);
         return "participants/list";
     }
 

@@ -3,6 +3,7 @@ package com.eliteseriespay.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -21,6 +22,11 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 class ParticipantServiceTest {
@@ -197,5 +203,54 @@ class ParticipantServiceTest {
         when(participantRepository.findAllByOrderByNameAsc()).thenReturn(List.of(first, second));
 
         assertThat(participantService.findAllOrderByName()).containsExactly(first, second);
+    }
+
+    @Test
+    void findParticipants_withoutSearchUsesRepositoryPagination() {
+        Participant first = TestEntities.participant(1L, "111", "Anna", null);
+        Page<Participant> page = new PageImpl<>(List.of(first), PageRequest.of(0, 50), 1);
+        when(participantRepository.findAllByOrderByNameAsc(any(Pageable.class))).thenReturn(page);
+
+        Page<Participant> result = participantService.findParticipants("   ", 0, 50);
+
+        assertThat(result.getContent()).containsExactly(first);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(participantRepository).findAllByOrderByNameAsc(pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(50);
+        assertThat(pageableCaptor.getValue().getSort()).isEqualTo(Sort.by("name").ascending());
+        verify(participantRepository, never()).searchByNameOrVkIdIgnoreCase(any(), any());
+    }
+
+    @Test
+    void findParticipants_withSearchDelegatesToRepository() {
+        Participant first = TestEntities.participant(1L, "111", "Anna", null);
+        Page<Participant> page = new PageImpl<>(List.of(first), PageRequest.of(1, 25), 2);
+        when(participantRepository.searchByNameOrVkIdIgnoreCase(eq("anna"), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<Participant> result = participantService.findParticipants(" anna ", 1, 25);
+
+        assertThat(result.getContent()).containsExactly(first);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(participantRepository).searchByNameOrVkIdIgnoreCase(eq("anna"), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(25);
+        verify(participantRepository, never()).findAllByOrderByNameAsc(any(Pageable.class));
+    }
+
+    @Test
+    void findParticipants_normalizesInvalidPageAndSize() {
+        Page<Participant> page = new PageImpl<>(List.of(), PageRequest.of(0, 50), 0);
+        when(participantRepository.findAllByOrderByNameAsc(any(Pageable.class))).thenReturn(page);
+
+        participantService.findParticipants(null, -3, 200);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(participantRepository).findAllByOrderByNameAsc(pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isZero();
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(50);
     }
 }

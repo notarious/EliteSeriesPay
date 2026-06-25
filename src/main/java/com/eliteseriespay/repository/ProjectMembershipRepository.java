@@ -2,6 +2,7 @@ package com.eliteseriespay.repository;
 
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.ProjectMembership;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -37,4 +38,13 @@ public interface ProjectMembershipRepository extends JpaRepository<ProjectMember
             GROUP BY m.participant.id
             """)
     List<Object[]> countGroupedByParticipantId(@Param("status") MembershipStatus status);
+
+    @Query("""
+            SELECT m.participant.id, COUNT(m)
+            FROM ProjectMembership m
+            WHERE m.status = :status AND m.participant.id IN :participantIds
+            GROUP BY m.participant.id
+            """)
+    List<Object[]> countGroupedByParticipantIdIn(@Param("status") MembershipStatus status,
+                                                   @Param("participantIds") Collection<Long> participantIds);
 }

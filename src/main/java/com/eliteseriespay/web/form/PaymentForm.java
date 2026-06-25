@@ -8,6 +8,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Getter
 @Setter
@@ -17,6 +18,7 @@ public class PaymentForm {
     private Long projectId;
 
     @NotNull(message = "Укажите дату платежа")
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     private LocalDate paymentDate;
 
     @NotNull(message = "Выберите источник")

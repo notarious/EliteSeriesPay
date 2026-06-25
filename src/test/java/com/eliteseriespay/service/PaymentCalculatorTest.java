@@ -54,10 +54,10 @@ class PaymentCalculatorTest {
     }
 
     @Test
-    void calculate_otherSourceHasZeroFee() {
+    void calculate_manualSourceHasZeroFee() {
         NormalizedAmounts normalized = paymentCalculator.normalize(
                 new BigDecimal("1000.00"), PaymentCurrency.RUB, null);
-        PaymentAmounts amounts = paymentCalculator.calculate(PaymentSource.OTHER, normalized, 10);
+        PaymentAmounts amounts = paymentCalculator.calculate(PaymentSource.MANUAL, normalized, 10);
 
         assertThat(amounts.feePercent()).isZero();
         assertThat(amounts.netAmountRub()).isEqualByComparingTo("1000.00");
@@ -67,7 +67,7 @@ class PaymentCalculatorTest {
     void calculate_convertsForeignCurrency() {
         NormalizedAmounts normalized = paymentCalculator.normalize(
                 new BigDecimal("10.00"), PaymentCurrency.USD, new BigDecimal("90.5"));
-        PaymentAmounts amounts = paymentCalculator.calculate(PaymentSource.OTHER, normalized, 10);
+        PaymentAmounts amounts = paymentCalculator.calculate(PaymentSource.MANUAL, normalized, 10);
 
         assertThat(amounts.amountRub()).isEqualByComparingTo("905.00");
         assertThat(amounts.netAmountRub()).isEqualByComparingTo("905.00");

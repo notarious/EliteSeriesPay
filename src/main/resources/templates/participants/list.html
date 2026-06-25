@@ -11,41 +11,118 @@
         <a class="btn btn-primary" th:href="@{/participants/new}">Новый участник</a>
     </div>
 
-    <div th:if="${#lists.isEmpty(participants)}" class="alert alert-info mb-0">
+    <form class="row g-3 align-items-end mb-4" method="get" th:action="@{/participants}">
+        <div class="col-sm-6 col-md-4 col-lg-3">
+            <label class="form-label" for="searchQuery">Имя или VK ID</label>
+            <input class="form-control" id="searchQuery" name="q" type="search"
+                   th:value="${searchQuery}" placeholder="Имя или VK ID">
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary" type="submit">Найти</button>
+        </div>
+        <div class="col-auto">
+            <label class="form-label" for="pageSize">На странице</label>
+            <select class="form-select" id="pageSize" name="size" onchange="this.form.submit()">
+                <option th:each="allowedSize : ${allowedPageSizes}"
+                        th:selected="${allowedSize == pageSize}"
+                        th:text="${allowedSize}"
+                        th:value="${allowedSize}">50</option>
+            </select>
+        </div>
+        <input name="page" type="hidden" value="0">
+    </form>
+
+    <div th:if="${participantsPage.totalElements == 0 and #strings.isEmpty(searchQuery)}"
+         class="alert alert-info mb-0">
         Участников пока нет. Создайте первого участника.
     </div>
 
-    <div th:unless="${#lists.isEmpty(participants)}" class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead>
-            <tr>
-                <th scope="col">Имя</th>
-                <th scope="col">VK ID</th>
-                <th scope="col">Комментарий</th>
-                <th scope="col" class="text-end">Активных проектов</th>
-                <th scope="col" class="text-end">Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="participant : ${participants}">
-                <td>
-                    <a th:href="@{/participants/{id}(id=${participant.id})}" th:text="${participant.name}">Иван</a>
-                </td>
-                <td th:text="${participant.vkId}">12345</td>
-                <td th:text="${participant.comment != null ? participant.comment : '—'}">—</td>
-                <td class="text-end"
-                    th:text="${activeProjectCounts.containsKey(participant.id) ? activeProjectCounts.get(participant.id) : 0}">
-                    0
-                </td>
-                <td class="text-end">
-                    <a class="btn btn-sm btn-outline-primary"
-                       th:href="@{/participants/{id}(id=${participant.id})}">Открыть</a>
-                    <a class="btn btn-sm btn-outline-secondary"
-                       th:href="@{/participants/{id}/edit(id=${participant.id})}">Изменить</a>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div th:if="${participantsPage.totalElements == 0 and !#strings.isEmpty(searchQuery)}"
+         class="alert alert-info mb-0">
+        Ничего не найдено. Попробуйте изменить запрос.
+    </div>
+
+    <div th:unless="${participantsPage.totalElements == 0}">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="text-muted small"
+                 th:text="|Найдено: ${participantsPage.totalElements}|">Найдено: 0</div>
+            <div class="text-muted small"
+                 th:if="${participantsPage.totalPages > 1}"
+                 th:text="|Страница ${participantsPage.number + 1} из ${participantsPage.totalPages}|">
+                Страница 1 из 1
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">Имя</th>
+                    <th scope="col">VK ID</th>
+                    <th scope="col">Комментарий</th>
+                    <th scope="col" class="text-end">Активных проектов</th>
+                    <th scope="col" class="text-end">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="participant : ${participantsPage.content}">
+                    <td>
+                        <a th:href="@{/participants/{id}(id=${participant.id})}"
+                           th:text="${participant.name}">Иван</a>
+                    </td>
+                    <td th:text="${participant.vkId}">12345</td>
+                    <td th:text="${participant.comment != null ? participant.comment : '—'}">—</td>
+                    <td class="text-end"
+                        th:text="${activeProjectCounts.containsKey(participant.id) ? activeProjectCounts.get(participant.id) : 0}">
+                        0
+                    </td>
+                    <td class="text-end">
+                        <div class="d-inline-flex gap-1">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               th:href="@{/participants/{id}(id=${participant.id})}"
+                               title="Открыть" aria-label="Открыть">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-primary"
+                               th:href="@{/participants/{id}/edit(id=${participant.id})}"
+                               title="Изменить" aria-label="Изменить">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav th:if="${participantsPage.totalPages > 1}" aria-label="Навигация по страницам">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item" th:classappend="${participantsPage.first} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/participants(q=${searchQuery}, page=${participantsPage.number - 1}, size=${pageSize})}"
+                       th:unless="${participantsPage.first}">Назад</a>
+                    <span class="page-link" th:if="${participantsPage.first}">Назад</span>
+                </li>
+
+                <li class="page-item"
+                    th:each="pageNumber : ${#numbers.sequence(0, participantsPage.totalPages - 1)}"
+                    th:classappend="${pageNumber == participantsPage.number} ? 'active'">
+                    <a class="page-link"
+                       th:href="@{/participants(q=${searchQuery}, page=${pageNumber}, size=${pageSize})}"
+                       th:text="${pageNumber + 1}"
+                       th:unless="${pageNumber == participantsPage.number}">1</a>
+                    <span class="page-link" th:if="${pageNumber == participantsPage.number}"
+                          th:text="${pageNumber + 1}">1</span>
+                </li>
+
+                <li class="page-item" th:classappend="${participantsPage.last} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/participants(q=${searchQuery}, page=${participantsPage.number + 1}, size=${pageSize})}"
+                       th:unless="${participantsPage.last}">Вперёд</a>
+                    <span class="page-link" th:if="${participantsPage.last}">Вперёд</span>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
 </body>

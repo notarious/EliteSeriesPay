@@ -9,11 +9,19 @@ import com.eliteseriespay.util.Texts;
 import com.eliteseriespay.validation.ParticipantValidator;
 import com.eliteseriespay.validation.ValidationError;
 import java.util.List;
+import java.util.Set;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class ParticipantService {
+
+    public static final int DEFAULT_PAGE_SIZE = 50;
+    public static final Set<Integer> ALLOWED_PAGE_SIZES = Set.of(25, 50, 100);
 
     private final ParticipantRepository participantRepository;
 
@@ -30,6 +38,19 @@ public class ParticipantService {
     @Transactional(readOnly = true)
     public List<Participant> findAllOrderByName() {
         return participantRepository.findAllByOrderByNameAsc();
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Participant> findParticipants(String searchQuery, int page, int pageSize) {
+        String normalizedQuery = Texts.trimToNull(searchQuery);
+        int normalizedPage = Math.max(page, 0);
+        int normalizedSize = ALLOWED_PAGE_SIZES.contains(pageSize) ? pageSize : DEFAULT_PAGE_SIZE;
+        Pageable pageable = PageRequest.of(normalizedPage, normalizedSize, Sort.by("name").ascending());
+
+        if (normalizedQuery == null) {
+            return participantRepository.findAllByOrderByNameAsc(pageable);
+        }
+        return participantRepository.searchByNameOrVkIdIgnoreCase(normalizedQuery, pageable);
     }
 
     @Transactional(readOnly = true)
