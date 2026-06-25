@@ -19,6 +19,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +54,38 @@ public class PaymentService {
     public List<Payment> findByParticipantId(Long participantId) {
         participantService.findById(participantId);
         return paymentRepository.findByParticipantIdOrderByPaymentDateDescIdDesc(participantId);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Payment> findParticipantPaymentHistory(Long participantId,
+                                                       ParticipantPaymentHistoryFilter filter) {
+        participantService.findById(participantId);
+        Long projectId = resolveProjectFilter(participantId, filter.projectId());
+        Pageable pageable = PageRequest.of(
+                filter.page(),
+                filter.pageSize(),
+                Sort.by(Sort.Order.desc("paymentDate"), Sort.Order.desc("id")));
+
+        return paymentRepository.findParticipantPaymentHistory(
+                participantId,
+                projectId,
+                filter.source(),
+                filter.status(),
+                filter.dateFrom(),
+                filter.dateTo(),
+                pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public boolean hasAnyPayments(Long participantId) {
+        participantService.findById(participantId);
+        return paymentRepository.existsByParticipant_Id(participantId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Project> findProjectsInParticipantPaymentHistory(Long participantId) {
+        participantService.findById(participantId);
+        return paymentRepository.findDistinctProjectsByParticipantIdOrderByNameAsc(participantId);
     }
 
     @Transactional(readOnly = true)
@@ -202,5 +238,16 @@ public class PaymentService {
 
     private PaymentFormDefaults emptyPaymentFormDefaults(LocalDate paymentDate) {
         return new PaymentFormDefaults(paymentDate, null, null, null, null, null);
+    }
+
+    private Long resolveProjectFilter(Long participantId, Long projectId) {
+        if (projectId == null) {
+            return null;
+        }
+        return findProjectsInParticipantPaymentHistory(participantId).stream()
+                .map(Project::getId)
+                .filter(projectId::equals)
+                .findFirst()
+                .orElse(null);
     }
 }

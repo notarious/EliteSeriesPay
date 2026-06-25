@@ -1,10 +1,16 @@
 package com.eliteseriespay.repository;
 
 import com.eliteseriespay.domain.Payment;
+import com.eliteseriespay.domain.PaymentSource;
 import com.eliteseriespay.domain.PaymentStatus;
+import com.eliteseriespay.domain.Project;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -18,6 +24,42 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             ORDER BY p.paymentDate DESC, p.id DESC
             """)
     List<Payment> findByParticipantIdOrderByPaymentDateDescIdDesc(@Param("participantId") Long participantId);
+
+    boolean existsByParticipant_Id(Long participantId);
+
+    @EntityGraph(attributePaths = "project")
+    @Query(value = """
+            SELECT p FROM Payment p
+            WHERE p.participant.id = :participantId
+            AND (:projectId IS NULL OR p.project.id = :projectId)
+            AND (:source IS NULL OR p.source = :source)
+            AND (:status IS NULL OR p.status = :status)
+            AND (:dateFrom IS NULL OR p.paymentDate >= :dateFrom)
+            AND (:dateTo IS NULL OR p.paymentDate <= :dateTo)
+            """,
+            countQuery = """
+            SELECT COUNT(p) FROM Payment p
+            WHERE p.participant.id = :participantId
+            AND (:projectId IS NULL OR p.project.id = :projectId)
+            AND (:source IS NULL OR p.source = :source)
+            AND (:status IS NULL OR p.status = :status)
+            AND (:dateFrom IS NULL OR p.paymentDate >= :dateFrom)
+            AND (:dateTo IS NULL OR p.paymentDate <= :dateTo)
+            """)
+    Page<Payment> findParticipantPaymentHistory(@Param("participantId") Long participantId,
+                                                @Param("projectId") Long projectId,
+                                                @Param("source") PaymentSource source,
+                                                @Param("status") PaymentStatus status,
+                                                @Param("dateFrom") LocalDate dateFrom,
+                                                @Param("dateTo") LocalDate dateTo,
+                                                Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT p.project FROM Payment p
+            WHERE p.participant.id = :participantId
+            ORDER BY p.project.name ASC
+            """)
+    List<Project> findDistinctProjectsByParticipantIdOrderByNameAsc(@Param("participantId") Long participantId);
 
     @Query("""
             SELECT p FROM Payment p

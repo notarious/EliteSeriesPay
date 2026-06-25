@@ -24,70 +24,226 @@
         </div>
     </div>
 
-    <div th:if="${#lists.isEmpty(payments)}" class="alert alert-info mb-0">
+    <form class="row g-2 align-items-end mb-3" method="get"
+          th:action="@{/participants/{participantId}/payments(participantId=${participant.id})}">
+        <div class="col-md-3 col-lg-2">
+            <label class="form-label small mb-1" for="projectId">Проект</label>
+            <select class="form-select form-select-sm" id="projectId" name="projectId">
+                <option value="" th:selected="${historyFilter.projectId == null}">Все проекты</option>
+                <option th:each="project : ${filterProjects}"
+                        th:selected="${historyFilter.projectId != null and historyFilter.projectId == project.id}"
+                        th:text="${project.name}"
+                        th:value="${project.id}">Пример проекта</option>
+            </select>
+        </div>
+        <div class="col-md-3 col-lg-2">
+            <label class="form-label small mb-1" for="source">Источник</label>
+            <select class="form-select form-select-sm" id="source" name="source">
+                <option value="" th:selected="${historyFilter.source == null}">Все</option>
+                <option value="VK_DONUT"
+                        th:selected="${historyFilter.source != null and historyFilter.source.name() == 'VK_DONUT'}">
+                    VK Donut
+                </option>
+                <option value="MANUAL"
+                        th:selected="${historyFilter.source != null and historyFilter.source.name() == 'MANUAL'}">
+                    Вручную
+                </option>
+            </select>
+        </div>
+        <div class="col-md-3 col-lg-2">
+            <label class="form-label small mb-1" for="status">Статус</label>
+            <select class="form-select form-select-sm" id="status" name="status">
+                <option value="" th:selected="${historyFilter.status == null}">Все</option>
+                <option value="ACTIVE"
+                        th:selected="${historyFilter.status != null and historyFilter.status.name() == 'ACTIVE'}">
+                    Активные
+                </option>
+                <option value="VOIDED"
+                        th:selected="${historyFilter.status != null and historyFilter.status.name() == 'VOIDED'}">
+                    Аннулированные
+                </option>
+            </select>
+        </div>
+        <div class="col-md-4 col-lg-3">
+            <label class="form-label small mb-1">Период</label>
+            <div class="input-group input-group-sm">
+                <input class="form-control" id="dateFrom" name="dateFrom" type="date"
+                       aria-label="С" th:value="${historyFilter.dateFrom}">
+                <span class="input-group-text px-2">—</span>
+                <input class="form-control" id="dateTo" name="dateTo" type="date"
+                       aria-label="По" th:value="${historyFilter.dateTo}">
+            </div>
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary btn-sm" type="submit">Применить</button>
+        </div>
+        <div class="col-auto">
+            <label class="form-label small mb-1" for="pageSize">На странице</label>
+            <select class="form-select form-select-sm" id="pageSize" name="size" onchange="this.form.submit()">
+                <option th:each="allowedSize : ${allowedPageSizes}"
+                        th:selected="${allowedSize == historyFilter.pageSize}"
+                        th:text="${allowedSize}"
+                        th:value="${allowedSize}">25</option>
+            </select>
+        </div>
+        <input name="page" type="hidden" value="0">
+    </form>
+
+    <div th:if="${!hasAnyPayments}" class="alert alert-info mb-0">
         Платежей пока нет.
     </div>
 
-    <div th:unless="${#lists.isEmpty(payments)}" class="table-responsive">
-        <table class="table table-striped align-middle">
-            <thead>
-            <tr>
-                <th scope="col">Дата</th>
-                <th scope="col">Проект</th>
-                <th scope="col">Источник</th>
-                <th scope="col" class="text-end">В валюте</th>
-                <th scope="col" class="text-end">Курс</th>
-                <th scope="col" class="text-end">Сумма</th>
-                <th scope="col" class="text-end">Комиссия</th>
-                <th scope="col" class="text-end">Получено</th>
-                <th scope="col">Комментарий</th>
-                <th scope="col" class="text-end">Действия</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="payment : ${payments}"
-                th:classappend="${payment.status.name() == 'VOIDED'} ? 'text-muted' : ''">
-                <td>
-                    <span th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy')}">01.01.2026</span>
-                    <span th:if="${payment.status.name() == 'VOIDED'}" class="badge bg-secondary ms-1">Аннулирован</span>
-                </td>
-                <td>
-                    <a th:href="@{/projects/{id}(id=${payment.project.id})}"
-                       th:text="${payment.project.name}">Пример проекта</a>
-                </td>
-                <td th:text="${payment.source.displayName}">VK Donut</td>
-                <td class="text-end">
-                    <span th:text="${#numbers.formatDecimal(payment.amountOriginal, 1, 'COMMA', 2, 'POINT')}">100.00</span>
-                    <span th:text="' ' + ${payment.currency.displayName}"> ₽</span>
-                </td>
-                <td class="text-end"
-                    th:text="${#numbers.formatDecimal(payment.exchangeRate, 1, 'COMMA', 4, 'POINT')}">1.0000</td>
-                <td class="text-end"
-                    th:text="${#numbers.formatDecimal(payment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">100.00 ₽</td>
-                <td class="text-end" th:text="${payment.feePercent} + '%'">10%</td>
-                <td class="text-end"
-                    th:text="${#numbers.formatDecimal(payment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">90.00 ₽</td>
-                <td th:text="${payment.comment != null ? payment.comment : '—'}">—</td>
-                <td class="text-end">
-                    <div th:if="${payment.status.name() == 'ACTIVE'}" class="d-inline-flex gap-1">
-                        <a class="btn btn-sm btn-outline-primary"
-                           th:href="@{/participants/{participantId}/payments/{paymentId}/edit(participantId=${participant.id}, paymentId=${payment.id})}"
-                           title="Изменить" aria-label="Изменить">
-                            <i class="bi bi-pencil" aria-hidden="true"></i>
-                        </a>
-                        <form th:action="@{/participants/{participantId}/payments/{paymentId}/void(participantId=${participant.id}, paymentId=${payment.id})}"
-                              method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    title="Аннулировать" aria-label="Аннулировать"
-                                    onclick="return confirm('Аннулировать платёж? Платёж останется в истории, но не будет учитываться в расчётах.');">
-                                <i class="bi bi-x-circle" aria-hidden="true"></i>
-                            </button>
-                        </form>
-                    </div>
-                </td>
-            </tr>
-            </tbody>
-        </table>
+    <div th:if="${hasAnyPayments and paymentsPage.totalElements == 0}" class="alert alert-info mb-0">
+        Ничего не найдено. Попробуйте изменить фильтры.
+    </div>
+
+    <div th:if="${paymentsPage.totalElements > 0}">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="text-muted small"
+                 th:text="|Найдено: ${paymentsPage.totalElements}|">Найдено: 0</div>
+            <div class="text-muted small"
+                 th:if="${paymentsPage.totalPages > 1}"
+                 th:text="|Страница ${paymentsPage.number + 1} из ${paymentsPage.totalPages}|">
+                Страница 1 из 1
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-striped align-middle table-sm">
+                <thead>
+                <tr>
+                    <th scope="col">Дата</th>
+                    <th scope="col">Проект</th>
+                    <th scope="col">Источник</th>
+                    <th scope="col" class="text-end">В валюте</th>
+                    <th scope="col" class="text-end">Курс</th>
+                    <th scope="col" class="text-end">Сумма</th>
+                    <th scope="col" class="text-end">Комиссия</th>
+                    <th scope="col" class="text-end">Получено</th>
+                    <th scope="col">Комментарий</th>
+                    <th scope="col" class="text-end">Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="payment : ${paymentsPage.content}"
+                    th:classappend="${payment.status.name() == 'VOIDED'} ? 'text-muted' : ''">
+                    <td>
+                        <span th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy')}">01.01.2026</span>
+                        <span th:if="${payment.status.name() == 'VOIDED'}" class="badge bg-secondary ms-1">Аннулирован</span>
+                    </td>
+                    <td>
+                        <a th:href="@{/projects/{id}(id=${payment.project.id})}"
+                           th:text="${payment.project.name}">Пример проекта</a>
+                    </td>
+                    <td th:text="${payment.source.displayName}">VK Donut</td>
+                    <td class="text-end">
+                        <span th:text="${#numbers.formatDecimal(payment.amountOriginal, 1, 'COMMA', 2, 'POINT')}">100.00</span>
+                        <span th:text="' ' + ${payment.currency.displayName}"> ₽</span>
+                    </td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(payment.exchangeRate, 1, 'COMMA', 4, 'POINT')}">1.0000</td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(payment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">100.00 ₽</td>
+                    <td class="text-end" th:text="${payment.feePercent} + '%'">10%</td>
+                    <td class="text-end"
+                        th:text="${#numbers.formatDecimal(payment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">90.00 ₽</td>
+                    <td th:text="${payment.comment != null ? payment.comment : '—'}">—</td>
+                    <td class="text-end">
+                        <div th:if="${payment.status.name() == 'ACTIVE'}" class="d-inline-flex gap-1">
+                            <a class="btn btn-sm btn-outline-primary"
+                               th:href="@{/participants/{participantId}/payments/{paymentId}/edit(
+                                   participantId=${participant.id},
+                                   paymentId=${payment.id},
+                                   historyProjectId=${historyFilter.projectId},
+                                   historySource=${historyFilter.source},
+                                   historyStatus=${historyFilter.status},
+                                   historyDateFrom=${historyFilter.dateFrom},
+                                   historyDateTo=${historyFilter.dateTo},
+                                   historyPage=${historyFilter.page},
+                                   historySize=${historyFilter.pageSize})}"
+                               title="Изменить" aria-label="Изменить">
+                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                            </a>
+                            <form th:action="@{/participants/{participantId}/payments/{paymentId}/void(
+                                    participantId=${participant.id}, paymentId=${payment.id})}"
+                                  method="post" class="d-inline">
+                                <input th:if="${historyFilter.projectId != null}" type="hidden"
+                                       name="historyProjectId" th:value="${historyFilter.projectId}">
+                                <input th:if="${historyFilter.source != null}" type="hidden"
+                                       name="historySource" th:value="${historyFilter.source}">
+                                <input th:if="${historyFilter.status != null}" type="hidden"
+                                       name="historyStatus" th:value="${historyFilter.status}">
+                                <input th:if="${historyFilter.dateFrom != null}" type="hidden"
+                                       name="historyDateFrom" th:value="${historyFilter.dateFrom}">
+                                <input th:if="${historyFilter.dateTo != null}" type="hidden"
+                                       name="historyDateTo" th:value="${historyFilter.dateTo}">
+                                <input type="hidden" name="historyPage" th:value="${historyFilter.page}">
+                                <input type="hidden" name="historySize" th:value="${historyFilter.pageSize}">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        title="Аннулировать" aria-label="Аннулировать"
+                                        onclick="return confirm('Аннулировать платёж? Платёж останется в истории, но не будет учитываться в расчётах.');">
+                                    <i class="bi bi-x-circle" aria-hidden="true"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <nav th:if="${paymentsPage.totalPages > 1}" aria-label="Навигация по страницам">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <li class="page-item" th:classappend="${paymentsPage.first} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/participants/{participantId}/payments(
+                           participantId=${participant.id},
+                           projectId=${historyFilter.projectId},
+                           source=${historyFilter.source},
+                           status=${historyFilter.status},
+                           dateFrom=${historyFilter.dateFrom},
+                           dateTo=${historyFilter.dateTo},
+                           page=${paymentsPage.number - 1},
+                           size=${historyFilter.pageSize})}"
+                       th:unless="${paymentsPage.first}">Назад</a>
+                    <span class="page-link" th:if="${paymentsPage.first}">Назад</span>
+                </li>
+
+                <li class="page-item"
+                    th:each="pageNumber : ${#numbers.sequence(0, paymentsPage.totalPages - 1)}"
+                    th:classappend="${pageNumber == paymentsPage.number} ? 'active'">
+                    <a class="page-link"
+                       th:href="@{/participants/{participantId}/payments(
+                           participantId=${participant.id},
+                           projectId=${historyFilter.projectId},
+                           source=${historyFilter.source},
+                           status=${historyFilter.status},
+                           dateFrom=${historyFilter.dateFrom},
+                           dateTo=${historyFilter.dateTo},
+                           page=${pageNumber},
+                           size=${historyFilter.pageSize})}"
+                       th:text="${pageNumber + 1}"
+                       th:unless="${pageNumber == paymentsPage.number}">1</a>
+                    <span class="page-link" th:if="${pageNumber == paymentsPage.number}"
+                          th:text="${pageNumber + 1}">1</span>
+                </li>
+
+                <li class="page-item" th:classappend="${paymentsPage.last} ? 'disabled'">
+                    <a class="page-link"
+                       th:href="@{/participants/{participantId}/payments(
+                           participantId=${participant.id},
+                           projectId=${historyFilter.projectId},
+                           source=${historyFilter.source},
+                           status=${historyFilter.status},
+                           dateFrom=${historyFilter.dateFrom},
+                           dateTo=${historyFilter.dateTo},
+                           page=${paymentsPage.number + 1},
+                           size=${historyFilter.pageSize})}"
+                       th:unless="${paymentsPage.last}">Вперёд</a>
+                    <span class="page-link" th:if="${paymentsPage.last}">Вперёд</span>
+                </li>
+            </ul>
+        </nav>
     </div>
 </div>
 </body>

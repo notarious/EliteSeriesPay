@@ -1,6 +1,7 @@
 package com.eliteseriespay.repository;
 
 import com.eliteseriespay.domain.MembershipStatus;
+import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.domain.ProjectMembership;
 import java.util.Collection;
 import java.util.List;
@@ -30,6 +31,13 @@ public interface ProjectMembershipRepository extends JpaRepository<ProjectMember
             """)
     List<ProjectMembership> findByParticipantIdAndStatus(@Param("participantId") Long participantId,
                                                            @Param("status") MembershipStatus status);
+
+    @Query("""
+            SELECT DISTINCT m.project FROM ProjectMembership m
+            WHERE m.participant.id = :participantId
+            ORDER BY m.project.name ASC
+            """)
+    List<Project> findProjectsByParticipantId(@Param("participantId") Long participantId);
 
     @Query("""
             SELECT m.participant.id, COUNT(m)

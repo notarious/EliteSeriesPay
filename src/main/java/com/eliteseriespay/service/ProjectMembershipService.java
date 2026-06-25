@@ -49,6 +49,12 @@ public class ProjectMembershipService {
     }
 
     @Transactional(readOnly = true)
+    public List<Project> findProjectsByParticipantId(Long participantId) {
+        participantService.findById(participantId);
+        return projectMembershipRepository.findProjectsByParticipantId(participantId);
+    }
+
+    @Transactional(readOnly = true)
     public Map<Long, Long> countActiveProjectsByParticipantId() {
         return projectMembershipRepository.countGroupedByParticipantId(MembershipStatus.ACTIVE).stream()
                 .collect(Collectors.toMap(

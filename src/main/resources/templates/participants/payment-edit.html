@@ -86,10 +86,31 @@
                     <textarea class="form-control" id="comment" rows="2" th:field="*{comment}"></textarea>
                 </div>
 
+                <input th:if="${historyFilter.projectId != null}" type="hidden"
+                       name="historyProjectId" th:value="${historyFilter.projectId}">
+                <input th:if="${historyFilter.source != null}" type="hidden"
+                       name="historySource" th:value="${historyFilter.source}">
+                <input th:if="${historyFilter.status != null}" type="hidden"
+                       name="historyStatus" th:value="${historyFilter.status}">
+                <input th:if="${historyFilter.dateFrom != null}" type="hidden"
+                       name="historyDateFrom" th:value="${historyFilter.dateFrom}">
+                <input th:if="${historyFilter.dateTo != null}" type="hidden"
+                       name="historyDateTo" th:value="${historyFilter.dateTo}">
+                <input type="hidden" name="historyPage" th:value="${historyFilter.page}">
+                <input type="hidden" name="historySize" th:value="${historyFilter.pageSize}">
+
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Сохранить изменения</button>
                     <a class="btn btn-outline-secondary"
-                       th:href="@{/participants/{id}/payments(id=${participantId})}">Отмена</a>
+                       th:href="@{/participants/{participantId}/payments(
+                           participantId=${participantId},
+                           projectId=${historyFilter.projectId},
+                           source=${historyFilter.source},
+                           status=${historyFilter.status},
+                           dateFrom=${historyFilter.dateFrom},
+                           dateTo=${historyFilter.dateTo},
+                           page=${historyFilter.page},
+                           size=${historyFilter.pageSize})}">Отмена</a>
                 </div>
             </form>
         </div>

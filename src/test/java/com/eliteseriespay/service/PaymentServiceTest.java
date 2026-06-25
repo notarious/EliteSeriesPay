@@ -3,6 +3,7 @@ package com.eliteseriespay.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -34,8 +35,14 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentServiceTest {
@@ -272,6 +279,76 @@ class PaymentServiceTest {
         List<Payment> payments = paymentService.findByParticipantId(PARTICIPANT_ID);
 
         assertThat(payments).containsExactly(newer, older);
+    }
+
+    @Test
+    void findParticipantPaymentHistory_delegatesToRepositoryWithNormalizedFilter() {
+        ParticipantPaymentHistoryFilter filter = ParticipantPaymentHistoryFilter.of(
+                PROJECT_ID, PaymentSource.MANUAL, PaymentStatus.ACTIVE,
+                LocalDate.of(2026, 1, 1), LocalDate.of(2026, 6, 1), 1, 50);
+        Payment payment = TestEntities.payment(
+                1L, participant, project, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
+        Page<Payment> page = new PageImpl<>(List.of(payment), PageRequest.of(1, 50), 2);
+
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findDistinctProjectsByParticipantIdOrderByNameAsc(PARTICIPANT_ID))
+                .thenReturn(List.of(project));
+        when(paymentRepository.findParticipantPaymentHistory(
+                eq(PARTICIPANT_ID), eq(PROJECT_ID), eq(PaymentSource.MANUAL), eq(PaymentStatus.ACTIVE),
+                eq(LocalDate.of(2026, 1, 1)), eq(LocalDate.of(2026, 6, 1)), any(Pageable.class)))
+                .thenReturn(page);
+
+        Page<Payment> result = paymentService.findParticipantPaymentHistory(PARTICIPANT_ID, filter);
+
+        assertThat(result.getContent()).containsExactly(payment);
+
+        ArgumentCaptor<Pageable> pageableCaptor = ArgumentCaptor.forClass(Pageable.class);
+        verify(paymentRepository).findParticipantPaymentHistory(
+                eq(PARTICIPANT_ID), eq(PROJECT_ID), eq(PaymentSource.MANUAL), eq(PaymentStatus.ACTIVE),
+                eq(LocalDate.of(2026, 1, 1)), eq(LocalDate.of(2026, 6, 1)), pageableCaptor.capture());
+        assertThat(pageableCaptor.getValue().getPageNumber()).isEqualTo(1);
+        assertThat(pageableCaptor.getValue().getPageSize()).isEqualTo(50);
+        assertThat(pageableCaptor.getValue().getSort()).isEqualTo(
+                Sort.by(Sort.Order.desc("paymentDate"), Sort.Order.desc("id")));
+    }
+
+    @Test
+    void findParticipantPaymentHistory_ignoresUnknownProjectFilter() {
+        ParticipantPaymentHistoryFilter filter = ParticipantPaymentHistoryFilter.of(
+                99L, null, null, null, null, 0, 25);
+        Page<Payment> page = new PageImpl<>(List.of());
+
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findDistinctProjectsByParticipantIdOrderByNameAsc(PARTICIPANT_ID))
+                .thenReturn(List.of(project));
+        when(paymentRepository.findParticipantPaymentHistory(
+                eq(PARTICIPANT_ID), eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class)))
+                .thenReturn(page);
+
+        paymentService.findParticipantPaymentHistory(PARTICIPANT_ID, filter);
+
+        verify(paymentRepository).findParticipantPaymentHistory(
+                eq(PARTICIPANT_ID), eq(null), eq(null), eq(null), eq(null), eq(null), any(Pageable.class));
+    }
+
+    @Test
+    void findProjectsInParticipantPaymentHistory_returnsProjectsFromRepository() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findDistinctProjectsByParticipantIdOrderByNameAsc(PARTICIPANT_ID))
+                .thenReturn(List.of(project));
+
+        assertThat(paymentService.findProjectsInParticipantPaymentHistory(PARTICIPANT_ID))
+                .containsExactly(project);
+    }
+
+    @Test
+    void hasAnyPayments_returnsRepositoryResult() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.existsByParticipant_Id(PARTICIPANT_ID)).thenReturn(true);
+
+        assertThat(paymentService.hasAnyPayments(PARTICIPANT_ID)).isTrue();
     }
 
     @Test
