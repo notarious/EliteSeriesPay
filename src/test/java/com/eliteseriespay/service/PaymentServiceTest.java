@@ -3,18 +3,22 @@ package com.eliteseriespay.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.eliteseriespay.domain.ApplicationSettings;
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
+import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.repository.ApplicationSettingsRepository;
 import com.eliteseriespay.repository.ParticipantRepository;
 import com.eliteseriespay.repository.PaymentRepository;
 import com.eliteseriespay.repository.ProjectMembershipRepository;
@@ -51,6 +55,9 @@ class PaymentServiceTest {
     @Mock
     private ProjectMembershipRepository projectMembershipRepository;
 
+    @Mock
+    private ApplicationSettingsRepository applicationSettingsRepository;
+
     private PaymentService paymentService;
 
     private Project project;
@@ -63,12 +70,30 @@ class PaymentServiceTest {
         ParticipantService participantService = new ParticipantService(participantRepository);
         ProjectMembershipService projectMembershipService = new ProjectMembershipService(
                 projectService, participantService, projectMembershipRepository);
+        ApplicationSettingsService applicationSettingsService =
+                new ApplicationSettingsService(applicationSettingsRepository);
         paymentService = new PaymentService(
-                paymentRepository, participantService, projectService, projectMembershipService);
+                paymentRepository, participantService, projectService, projectMembershipService,
+                new PaymentCalculator(), applicationSettingsService);
 
         project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
         activeMembership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+    }
+
+    @Test
+    void create_usesCurrentVkDonutFeePercentFromSettings() {
+        stubActiveMembership();
+        when(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
+                .thenReturn(Optional.of(new ApplicationSettings(15)));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Payment payment = paymentService.create(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.VK_DONUT,
+                new BigDecimal("1000.00"), PaymentCurrency.RUB, null, null);
+
+        assertThat(payment.getFeePercent()).isEqualTo(15);
+        assertThat(payment.getNetAmountRub()).isEqualByComparingTo("850.00");
     }
 
     @Test
@@ -84,6 +109,7 @@ class PaymentServiceTest {
         assertThat(payment.getAmountRub()).isEqualByComparingTo("500.00");
         assertThat(payment.getFeePercent()).isZero();
         assertThat(payment.getNetAmountRub()).isEqualByComparingTo("500.00");
+        assertThat(payment.getStatus()).isEqualTo(PaymentStatus.ACTIVE);
         verify(paymentRepository).save(any(Payment.class));
     }
 
@@ -267,15 +293,18 @@ class PaymentServiceTest {
                 new BigDecimal("200.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("200.00"), 0, new BigDecimal("200.00"), null);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
-        when(paymentRepository.findTopByParticipantIdOrderByPaymentDateDescIdDesc(PARTICIPANT_ID))
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
                 .thenReturn(Optional.of(newer));
-        when(paymentRepository.sumNetAmountRubByParticipantId(PARTICIPANT_ID))
+        when(paymentRepository.sumActiveNetAmountRubByParticipantId(PARTICIPANT_ID))
                 .thenReturn(new BigDecimal("300.00"));
 
         ParticipantPaymentSummary summary = paymentService.getParticipantPaymentSummary(PARTICIPANT_ID);
 
         assertThat(summary.hasPayments()).isTrue();
         assertThat(summary.latestPaymentDate()).isEqualTo(newer.getPaymentDate());
+        assertThat(summary.latestProjectName()).isEqualTo(project.getName());
+        assertThat(summary.latestAmountRub()).isEqualByComparingTo("200.00");
         assertThat(summary.latestNetAmountRub()).isEqualByComparingTo("200.00");
         assertThat(summary.totalNetAmountRub()).isEqualByComparingTo("300.00");
     }
@@ -283,15 +312,18 @@ class PaymentServiceTest {
     @Test
     void getParticipantPaymentSummary_returnsEmptyWhenNoPayments() {
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
-        when(paymentRepository.findTopByParticipantIdOrderByPaymentDateDescIdDesc(PARTICIPANT_ID))
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
                 .thenReturn(Optional.empty());
-        when(paymentRepository.sumNetAmountRubByParticipantId(PARTICIPANT_ID))
+        when(paymentRepository.sumActiveNetAmountRubByParticipantId(PARTICIPANT_ID))
                 .thenReturn(BigDecimal.ZERO);
 
         ParticipantPaymentSummary summary = paymentService.getParticipantPaymentSummary(PARTICIPANT_ID);
 
         assertThat(summary.hasPayments()).isFalse();
         assertThat(summary.latestPaymentDate()).isNull();
+        assertThat(summary.latestProjectName()).isNull();
+        assertThat(summary.latestAmountRub()).isNull();
         assertThat(summary.latestNetAmountRub()).isNull();
         assertThat(summary.totalNetAmountRub()).isEqualByComparingTo("0");
     }
@@ -308,7 +340,7 @@ class PaymentServiceTest {
                 new BigDecimal("150.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
                 new BigDecimal("150.00"), 0, new BigDecimal("150.00"), null);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
-        when(paymentRepository.findLatestPaymentsByProjectId(PROJECT_ID))
+        when(paymentRepository.findLatestActivePaymentsByProjectId(PROJECT_ID))
                 .thenReturn(List.of(latestForParticipant, latestForOtherParticipant));
 
         Map<Long, Payment> latestPayments = paymentService.findLatestPaymentsByProjectId(PROJECT_ID);
@@ -318,7 +350,109 @@ class PaymentServiceTest {
         assertThat(latestPayments.get(11L)).isEqualTo(latestForOtherParticipant);
     }
 
+    @Test
+    void update_recalculatesAmountsOnSave() {
+        Payment existing = TestEntities.payment(
+                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findByIdAndParticipantId(5L, PARTICIPANT_ID))
+                .thenReturn(Optional.of(existing));
+        stubActiveMembership();
+
+        Payment updated = paymentService.update(
+                PARTICIPANT_ID, 5L, PROJECT_ID, PAYMENT_DATE, PaymentSource.VK_DONUT,
+                new BigDecimal("200.00"), PaymentCurrency.RUB, null, "corrected");
+
+        assertThat(updated.getAmountRub()).isEqualByComparingTo("200.00");
+        assertThat(updated.getFeePercent()).isEqualTo(10);
+        assertThat(updated.getNetAmountRub()).isEqualByComparingTo("180.00");
+        assertThat(updated.getComment()).isEqualTo("corrected");
+        assertThat(updated.getStatus()).isEqualTo(PaymentStatus.ACTIVE);
+    }
+
+    @Test
+    void update_rejectsVoidedPayment() {
+        Payment voided = TestEntities.payment(
+                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null, PaymentStatus.VOIDED);
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findByIdAndParticipantId(5L, PARTICIPANT_ID))
+                .thenReturn(Optional.of(voided));
+
+        assertThatThrownBy(() -> paymentService.update(
+                PARTICIPANT_ID, 5L, PROJECT_ID, PAYMENT_DATE, PaymentSource.OTHER,
+                new BigDecimal("100.00"), PaymentCurrency.RUB, null, null))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.PAYMENT_VOIDED));
+    }
+
+    @Test
+    void voidPayment_marksPaymentAsVoided() {
+        Payment existing = TestEntities.payment(
+                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null);
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findByIdAndParticipantId(5L, PARTICIPANT_ID))
+                .thenReturn(Optional.of(existing));
+
+        paymentService.voidPayment(PARTICIPANT_ID, 5L);
+
+        assertThat(existing.getStatus()).isEqualTo(PaymentStatus.VOIDED);
+    }
+
+    @Test
+    void voidPayment_rejectsAlreadyVoided() {
+        Payment voided = TestEntities.payment(
+                5L, participant, project, PAYMENT_DATE, PaymentSource.OTHER,
+                new BigDecimal("100.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("100.00"), 0, new BigDecimal("100.00"), null, PaymentStatus.VOIDED);
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findByIdAndParticipantId(5L, PARTICIPANT_ID))
+                .thenReturn(Optional.of(voided));
+
+        assertThatThrownBy(() -> paymentService.voidPayment(PARTICIPANT_ID, 5L))
+                .isInstanceOf(ValidationException.class)
+                .satisfies(ex -> assertThat(((ValidationException) ex).getError())
+                        .isEqualTo(ValidationError.PAYMENT_ALREADY_VOIDED));
+    }
+
+    @Test
+    void getParticipantPaymentSummary_excludesVoidedPayments() {
+        Payment voidedLatest = TestEntities.payment(
+                3L, participant, project, LocalDate.of(2026, 12, 1), PaymentSource.OTHER,
+                new BigDecimal("500.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("500.00"), 0, new BigDecimal("500.00"), null, PaymentStatus.VOIDED);
+        Payment activeOlder = TestEntities.payment(
+                2L, participant, project, LocalDate.of(2026, 6, 1), PaymentSource.OTHER,
+                new BigDecimal("200.00"), PaymentCurrency.RUB, new BigDecimal("1.0000"),
+                new BigDecimal("200.00"), 0, new BigDecimal("200.00"), null);
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                PARTICIPANT_ID, PaymentStatus.ACTIVE))
+                .thenReturn(Optional.of(activeOlder));
+        when(paymentRepository.sumActiveNetAmountRubByParticipantId(PARTICIPANT_ID))
+                .thenReturn(new BigDecimal("200.00"));
+
+        ParticipantPaymentSummary summary = paymentService.getParticipantPaymentSummary(PARTICIPANT_ID);
+
+        assertThat(summary.latestPaymentDate()).isEqualTo(activeOlder.getPaymentDate());
+        assertThat(summary.latestAmountRub()).isEqualByComparingTo("200.00");
+        assertThat(summary.totalNetAmountRub()).isEqualByComparingTo("200.00");
+        assertThat(voidedLatest.getStatus()).isEqualTo(PaymentStatus.VOIDED);
+    }
+
+    private void stubDefaultSettings() {
+        lenient().when(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
+                .thenReturn(Optional.of(new ApplicationSettings(10)));
+    }
+
     private void stubActiveMembership() {
+        stubDefaultSettings();
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))

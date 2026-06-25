@@ -1,6 +1,8 @@
 package com.eliteseriespay.web.controllers;
 
 import com.eliteseriespay.domain.Participant;
+import com.eliteseriespay.domain.Payment;
+import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
@@ -97,9 +99,77 @@ public class ParticipantPaymentController {
         return "redirect:/participants/" + participantId;
     }
 
+    @GetMapping("/{paymentId}/edit")
+    public String editForm(@PathVariable Long participantId,
+                           @PathVariable Long paymentId,
+                           Model model) {
+        List<ProjectMembership> activeMemberships =
+                projectMembershipService.findActiveByParticipantId(participantId);
+        if (activeMemberships.isEmpty()) {
+            return "redirect:/participants/" + participantId + "/payments";
+        }
+
+        Payment payment = paymentService.findById(participantId, paymentId);
+
+        if (payment.getStatus() == PaymentStatus.VOIDED) {
+            return "redirect:/participants/" + participantId + "/payments";
+        }
+
+        PaymentForm paymentForm = toPaymentForm(payment);
+        populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm);
+        return "participants/payment-edit";
+    }
+
+    @PostMapping("/{paymentId}/edit")
+    public String update(@PathVariable Long participantId,
+                         @PathVariable Long paymentId,
+                         @Valid @ModelAttribute("paymentForm") PaymentForm paymentForm,
+                         BindingResult bindingResult,
+                         Model model) {
+        List<ProjectMembership> activeMemberships =
+                projectMembershipService.findActiveByParticipantId(participantId);
+
+        if (bindingResult.hasErrors()) {
+            populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm);
+            return "participants/payment-edit";
+        }
+
+        try {
+            paymentService.update(
+                    participantId,
+                    paymentId,
+                    paymentForm.getProjectId(),
+                    paymentForm.getPaymentDate(),
+                    paymentForm.getSource(),
+                    paymentForm.getAmountOriginal(),
+                    paymentForm.getCurrency(),
+                    paymentForm.getExchangeRate(),
+                    paymentForm.getComment());
+        } catch (ValidationException ex) {
+            rejectPaymentForm(bindingResult, ex);
+            populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm);
+            return "participants/payment-edit";
+        }
+
+        return "redirect:/participants/" + participantId + "/payments";
+    }
+
+    @PostMapping("/{paymentId}/void")
+    public String voidPayment(@PathVariable Long participantId, @PathVariable Long paymentId) {
+        try {
+            paymentService.voidPayment(participantId, paymentId);
+        } catch (ValidationException ex) {
+            if (ex.getError() != ValidationError.PAYMENT_ALREADY_VOIDED) {
+                throw ex;
+            }
+        }
+
+        return "redirect:/participants/" + participantId + "/payments";
+    }
+
     @ExceptionHandler(NotFoundException.class)
-    public String handleNotFound() {
-        return "redirect:/participants";
+    public String handleNotFound(@PathVariable Long participantId) {
+        return "redirect:/participants/" + participantId + "/payments";
     }
 
     private void populateFormModel(Model model,
@@ -113,6 +183,32 @@ public class ParticipantPaymentController {
         model.addAttribute("paymentForm", paymentForm);
     }
 
+    private void populateEditFormModel(Model model,
+                                       Long participantId,
+                                       Long paymentId,
+                                       List<ProjectMembership> activeMemberships,
+                                       PaymentForm paymentForm) {
+        Participant participant = participantService.findById(participantId);
+        model.addAttribute("participant", participant);
+        model.addAttribute("participantId", participantId);
+        model.addAttribute("paymentId", paymentId);
+        model.addAttribute("activeMemberships", activeMemberships);
+        model.addAttribute("paymentForm", paymentForm);
+    }
+
+    private PaymentForm toPaymentForm(Payment payment) {
+        PaymentForm paymentForm = new PaymentForm();
+        paymentForm.setProjectId(payment.getProject().getId());
+        paymentForm.setPaymentDate(payment.getPaymentDate());
+        paymentForm.setSource(payment.getSource());
+        paymentForm.setAmountOriginal(payment.getAmountOriginal());
+        paymentForm.setCurrency(payment.getCurrency());
+        paymentForm.setExchangeRate(payment.getCurrency() == com.eliteseriespay.domain.PaymentCurrency.RUB
+                ? null : payment.getExchangeRate());
+        paymentForm.setComment(payment.getComment());
+        return paymentForm;
+    }
+
     private void rejectPaymentForm(BindingResult bindingResult, ValidationException ex) {
         ValidationError error = ex.getError();
         String field = switch (error) {
@@ -122,8 +218,13 @@ public class ParticipantPaymentController {
             case EXCHANGE_RATE_REQUIRED, EXCHANGE_RATE_NOT_POSITIVE -> "exchangeRate";
             case PAYMENT_SOURCE_REQUIRED -> "source";
             case PAYMENT_CURRENCY_REQUIRED -> "currency";
+            case PAYMENT_VOIDED, PAYMENT_ALREADY_VOIDED -> null;
             default -> throw new IllegalStateException("Unexpected validation error: " + error);
         };
-        bindingResult.rejectValue(field, error.name(), error.getMessage());
+        if (field != null) {
+            bindingResult.rejectValue(field, error.name(), error.getMessage());
+        } else {
+            bindingResult.reject(error.name(), error.getMessage());
+        }
     }
 }

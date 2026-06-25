@@ -1,0 +1,2 @@
+ALTER TABLE payments ADD COLUMN status TEXT NOT NULL DEFAULT 'ACTIVE'
+    CHECK (status IN ('ACTIVE', 'VOIDED'));

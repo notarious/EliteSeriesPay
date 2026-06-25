@@ -6,6 +6,7 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
+import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.Project;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -47,7 +48,7 @@ class PaymentRepositoryQueryTest {
     }
 
     @Test
-    void findTopByParticipantIdAndProjectIdOrderByPaymentDateDescIdDesc_returnsLatestForProject() {
+    void findFirstByParticipantIdAndProjectIdAndStatusOrderByPaymentDateDescIdDesc_returnsLatestActiveForProject() {
         Project projectA = projectRepository.save(new Project("Series A", new BigDecimal("1000.00")));
         Project projectB = projectRepository.save(new Project("Series B", new BigDecimal("1000.00")));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
@@ -57,7 +58,8 @@ class PaymentRepositoryQueryTest {
         savePayment(participant, projectB, LocalDate.of(2026, 12, 1), "300.00");
 
         Payment latest = paymentRepository
-                .findTopByParticipantIdAndProjectIdOrderByPaymentDateDescIdDesc(participant.getId(), projectA.getId())
+                .findFirstByParticipant_IdAndProject_IdAndStatusOrderByPaymentDateDescIdDesc(
+                        participant.getId(), projectA.getId(), PaymentStatus.ACTIVE)
                 .orElseThrow();
 
         assertThat(latest.getId()).isEqualTo(latestInProjectA.getId());
@@ -65,20 +67,33 @@ class PaymentRepositoryQueryTest {
     }
 
     @Test
-    void sumNetAmountRubByParticipantId_returnsTotalNetAmount() {
+    void sumActiveNetAmountRubByParticipantId_returnsTotalActiveNetAmount() {
         Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
         savePayment(participant, project, LocalDate.of(2026, 2, 1), "200.00");
 
-        BigDecimal total = paymentRepository.sumNetAmountRubByParticipantId(participant.getId());
+        BigDecimal total = paymentRepository.sumActiveNetAmountRubByParticipantId(participant.getId());
 
         assertThat(total).isEqualByComparingTo("300.00");
     }
 
     @Test
-    void findLatestPaymentsByProjectId_returnsLatestPaymentPerParticipant() {
+    void sumActiveNetAmountRubByParticipantId_excludesVoidedPayments() {
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
+
+        savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
+        saveVoidedPayment(participant, project, LocalDate.of(2026, 2, 1), "200.00");
+
+        BigDecimal total = paymentRepository.sumActiveNetAmountRubByParticipantId(participant.getId());
+
+        assertThat(total).isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void findLatestActivePaymentsByProjectId_returnsLatestActivePaymentPerParticipant() {
         Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
         Participant ivan = participantRepository.save(new Participant("12345", "Ivan", null));
         Participant anna = participantRepository.save(new Participant("67890", "Anna", null));
@@ -87,10 +102,39 @@ class PaymentRepositoryQueryTest {
         Payment latestIvan = savePayment(ivan, project, LocalDate.of(2026, 6, 1), "200.00");
         Payment latestAnna = savePayment(anna, project, LocalDate.of(2026, 3, 1), "150.00");
 
-        List<Payment> latestPayments = paymentRepository.findLatestPaymentsByProjectId(project.getId());
+        List<Payment> latestPayments = paymentRepository.findLatestActivePaymentsByProjectId(project.getId());
 
         assertThat(latestPayments).extracting(Payment::getId)
                 .containsExactlyInAnyOrder(latestIvan.getId(), latestAnna.getId());
+    }
+
+    @Test
+    void findLatestActivePaymentsByProjectId_skipsVoidedPayments() {
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
+
+        Payment activeOlder = savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
+        saveVoidedPayment(participant, project, LocalDate.of(2026, 12, 1), "500.00");
+
+        List<Payment> latestPayments = paymentRepository.findLatestActivePaymentsByProjectId(project.getId());
+
+        assertThat(latestPayments).extracting(Payment::getId).containsExactly(activeOlder.getId());
+    }
+
+    @Test
+    void findFirstByParticipantIdAndStatusOrderByPaymentDateDescIdDesc_skipsVoidedPayments() {
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
+
+        Payment activeOlder = savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
+        saveVoidedPayment(participant, project, LocalDate.of(2026, 12, 1), "500.00");
+
+        Payment latest = paymentRepository
+                .findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                        participant.getId(), PaymentStatus.ACTIVE)
+                .orElseThrow();
+
+        assertThat(latest.getId()).isEqualTo(activeOlder.getId());
     }
 
     private Payment savePayment(Participant participant,
@@ -98,7 +142,6 @@ class PaymentRepositoryQueryTest {
                                 LocalDate paymentDate,
                                 String netAmountRub) {
         BigDecimal amount = new BigDecimal(netAmountRub);
-        BigDecimal netAmount = new BigDecimal(netAmountRub);
         Payment payment = new Payment(
                 participant,
                 project,
@@ -109,8 +152,29 @@ class PaymentRepositoryQueryTest {
                 new BigDecimal("1.0000"),
                 amount,
                 0,
-                netAmount,
+                amount,
                 null);
+        return paymentRepository.save(payment);
+    }
+
+    private Payment saveVoidedPayment(Participant participant,
+                                      Project project,
+                                      LocalDate paymentDate,
+                                      String netAmountRub) {
+        BigDecimal amount = new BigDecimal(netAmountRub);
+        Payment payment = new Payment(
+                participant,
+                project,
+                paymentDate,
+                PaymentSource.OTHER,
+                amount,
+                PaymentCurrency.RUB,
+                new BigDecimal("1.0000"),
+                amount,
+                0,
+                amount,
+                null,
+                PaymentStatus.VOIDED);
         return paymentRepository.save(payment);
     }
 }

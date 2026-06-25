@@ -72,6 +72,16 @@ Business rules:
 - Projects with historical data should be archived rather than deleted.
 - Payments should be voided/cancelled rather than deleted once financial history matters.
 
+Only ACTIVE payments participate in:
+- latest payment summary;
+- latest project payment information;
+- total received amount;
+- future project statistics;
+- future monthly reports;
+- future episode funding calculations.
+
+VOIDED payments remain only as historical records.
+
 ## Development rules
 
 - Work in small vertical slices.

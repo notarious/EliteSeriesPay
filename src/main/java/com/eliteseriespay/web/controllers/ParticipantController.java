@@ -6,6 +6,7 @@ import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.service.ParticipantService;
 import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
+import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.FormErrorMapper;
 import com.eliteseriespay.web.form.AddParticipantToProjectForm;
 import com.eliteseriespay.web.form.ParticipantEditForm;
@@ -120,6 +121,19 @@ public class ParticipantController {
             model.addAttribute("availableProjects",
                     projectMembershipService.findProjectsAvailableForParticipant(participantId));
             return "participants/add-to-project";
+        }
+
+        return "redirect:/participants/" + participantId;
+    }
+
+    @PostMapping("/{participantId}/projects/{projectId}/remove")
+    public String removeFromProject(@PathVariable Long participantId, @PathVariable Long projectId) {
+        try {
+            projectMembershipService.removeFromProject(projectId, participantId);
+        } catch (ValidationException ex) {
+            if (ex.getError() != ValidationError.NOT_AN_ACTIVE_MEMBER) {
+                throw ex;
+            }
         }
 
         return "redirect:/participants/" + participantId;

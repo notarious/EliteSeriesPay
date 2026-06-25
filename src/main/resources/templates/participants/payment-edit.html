@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Изменение платежа — EliteSeriesPay</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h1 class="mb-1">Изменение платежа</h1>
+            <p class="text-muted mb-4">
+                Участник: <span th:text="${participant.name}">Иван</span>
+            </p>
+
+            <form th:action="@{/participants/{participantId}/payments/{paymentId}/edit(participantId=${participantId}, paymentId=${paymentId})}"
+                  th:object="${paymentForm}" method="post" novalidate>
+                <div class="mb-3">
+                    <label for="projectId" class="form-label">Проект</label>
+                    <select class="form-select" id="projectId" th:field="*{projectId}"
+                            th:classappend="${#fields.hasErrors('projectId')} ? 'is-invalid'">
+                        <option value="">Выберите проект</option>
+                        <option th:each="membership : ${activeMemberships}"
+                                th:value="${membership.project.id}"
+                                th:text="${membership.project.name}">Пример проекта</option>
+                    </select>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('projectId')}"
+                         th:errors="*{projectId}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="paymentDate" class="form-label">Дата платежа</label>
+                    <input type="date" class="form-control" id="paymentDate" th:field="*{paymentDate}"
+                           th:classappend="${#fields.hasErrors('paymentDate')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('paymentDate')}"
+                         th:errors="*{paymentDate}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="source" class="form-label">Источник</label>
+                    <select class="form-select" id="source" th:field="*{source}"
+                            th:classappend="${#fields.hasErrors('source')} ? 'is-invalid'">
+                        <option value="">Выберите источник</option>
+                        <option th:each="paymentSource : ${T(com.eliteseriespay.domain.PaymentSource).values()}"
+                                th:value="${paymentSource.name()}"
+                                th:text="${paymentSource.displayName}">VK Donut</option>
+                    </select>
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('source')}"
+                         th:errors="*{source}"></div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label for="amountOriginal" class="form-label">Сумма</label>
+                        <input type="number" step="0.01" min="0.01" class="form-control" id="amountOriginal"
+                               th:field="*{amountOriginal}"
+                               th:classappend="${#fields.hasErrors('amountOriginal')} ? 'is-invalid'">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('amountOriginal')}"
+                             th:errors="*{amountOriginal}"></div>
+                    </div>
+                    <div class="col-md-6">
+                        <label for="currency" class="form-label">Валюта</label>
+                        <select class="form-select" id="currency" th:field="*{currency}"
+                                th:classappend="${#fields.hasErrors('currency')} ? 'is-invalid'">
+                            <option value="">Выберите валюту</option>
+                            <option th:each="paymentCurrency : ${T(com.eliteseriespay.domain.PaymentCurrency).values()}"
+                                    th:value="${paymentCurrency.name()}"
+                                    th:text="${paymentCurrency.displayName}">₽</option>
+                        </select>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('currency')}"
+                             th:errors="*{currency}"></div>
+                    </div>
+                </div>
+
+                <div class="mb-3" id="exchangeRateGroup">
+                    <label for="exchangeRate" class="form-label">Курс к рублю</label>
+                    <input type="number" step="0.0001" min="0.0001" class="form-control" id="exchangeRate"
+                           th:field="*{exchangeRate}"
+                           th:classappend="${#fields.hasErrors('exchangeRate')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('exchangeRate')}"
+                         th:errors="*{exchangeRate}"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="comment" class="form-label">Комментарий</label>
+                    <textarea class="form-control" id="comment" rows="2" th:field="*{comment}"></textarea>
+                </div>
+
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a class="btn btn-outline-secondary"
+                       th:href="@{/participants/{id}/payments(id=${participantId})}">Отмена</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var currencySelect = document.getElementById('currency');
+            var exchangeRateGroup = document.getElementById('exchangeRateGroup');
+            var exchangeRateInput = document.getElementById('exchangeRate');
+
+            function updateExchangeRateVisibility() {
+                var isRub = currencySelect.value === 'RUB';
+                exchangeRateGroup.style.display = isRub ? 'none' : '';
+                exchangeRateInput.disabled = isRub;
+                if (isRub) {
+                    exchangeRateInput.value = '';
+                }
+            }
+
+            currencySelect.addEventListener('change', updateExchangeRateVisibility);
+            updateExchangeRateVisibility();
+        })();
+    </script>
+</div>
+</body>
+</html>

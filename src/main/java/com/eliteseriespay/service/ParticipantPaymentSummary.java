@@ -5,6 +5,8 @@ import java.time.LocalDate;
 
 public record ParticipantPaymentSummary(
         LocalDate latestPaymentDate,
+        String latestProjectName,
+        BigDecimal latestAmountRub,
         BigDecimal latestNetAmountRub,
         BigDecimal totalNetAmountRub) {
 

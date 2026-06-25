@@ -16,7 +16,9 @@ public enum ValidationError {
     PAYMENT_SOURCE_REQUIRED("Выберите источник"),
     PAYMENT_CURRENCY_REQUIRED("Выберите валюту"),
     EXCHANGE_RATE_REQUIRED("Укажите курс"),
-    EXCHANGE_RATE_NOT_POSITIVE("Курс должен быть больше нуля");
+    EXCHANGE_RATE_NOT_POSITIVE("Курс должен быть больше нуля"),
+    PAYMENT_VOIDED("Аннулированный платёж нельзя изменить"),
+    PAYMENT_ALREADY_VOIDED("Платёж уже аннулирован");
 
     private final String message;
 

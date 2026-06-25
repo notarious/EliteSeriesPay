@@ -4,13 +4,15 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
+import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.Project;
-import com.eliteseriespay.domain.ProjectMembership;
+import com.eliteseriespay.exception.NotFoundException;
+import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.PaymentRepository;
 import com.eliteseriespay.util.Texts;
 import com.eliteseriespay.validation.PaymentValidator;
+import com.eliteseriespay.validation.ValidationError;
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
@@ -22,23 +24,25 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class PaymentService {
 
-    private static final int VK_DONUT_FEE_PERCENT = 10;
-    private static final int MONEY_SCALE = 2;
-    private static final int EXCHANGE_RATE_SCALE = 4;
-
     private final PaymentRepository paymentRepository;
     private final ParticipantService participantService;
     private final ProjectService projectService;
     private final ProjectMembershipService projectMembershipService;
+    private final PaymentCalculator paymentCalculator;
+    private final ApplicationSettingsService applicationSettingsService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           ParticipantService participantService,
                           ProjectService projectService,
-                          ProjectMembershipService projectMembershipService) {
+                          ProjectMembershipService projectMembershipService,
+                          PaymentCalculator paymentCalculator,
+                          ApplicationSettingsService applicationSettingsService) {
         this.paymentRepository = paymentRepository;
         this.participantService = participantService;
         this.projectService = projectService;
         this.projectMembershipService = projectMembershipService;
+        this.paymentCalculator = paymentCalculator;
+        this.applicationSettingsService = applicationSettingsService;
     }
 
     @Transactional(readOnly = true)
@@ -48,21 +52,31 @@ public class PaymentService {
     }
 
     @Transactional(readOnly = true)
+    public Payment findById(Long participantId, Long paymentId) {
+        participantService.findById(participantId);
+        return paymentRepository.findByIdAndParticipantId(paymentId, participantId)
+                .orElseThrow(() -> new NotFoundException("Payment", paymentId));
+    }
+
+    @Transactional(readOnly = true)
     public ParticipantPaymentSummary getParticipantPaymentSummary(Long participantId) {
         participantService.findById(participantId);
-        BigDecimal totalNetAmountRub = paymentRepository.sumNetAmountRubByParticipantId(participantId);
-        return paymentRepository.findTopByParticipantIdOrderByPaymentDateDescIdDesc(participantId)
+        BigDecimal totalNetAmountRub = paymentRepository.sumActiveNetAmountRubByParticipantId(participantId);
+        return paymentRepository.findFirstByParticipant_IdAndStatusOrderByPaymentDateDescIdDesc(
+                        participantId, PaymentStatus.ACTIVE)
                 .map(payment -> new ParticipantPaymentSummary(
                         payment.getPaymentDate(),
+                        payment.getProject().getName(),
+                        payment.getAmountRub(),
                         payment.getNetAmountRub(),
                         totalNetAmountRub))
-                .orElseGet(() -> new ParticipantPaymentSummary(null, null, totalNetAmountRub));
+                .orElseGet(() -> new ParticipantPaymentSummary(null, null, null, null, totalNetAmountRub));
     }
 
     @Transactional(readOnly = true)
     public Map<Long, Payment> findLatestPaymentsByProjectId(Long projectId) {
         projectService.findById(projectId);
-        return paymentRepository.findLatestPaymentsByProjectId(projectId).stream()
+        return paymentRepository.findLatestActivePaymentsByProjectId(projectId).stream()
                 .collect(Collectors.toMap(payment -> payment.getParticipant().getId(), Function.identity()));
     }
 
@@ -80,59 +94,78 @@ public class PaymentService {
         projectMembershipService.getActiveMembership(projectId, participantId);
 
         String normalizedComment = Texts.trimToNull(comment);
-        BigDecimal normalizedAmount = normalizeAmount(amountOriginal);
-        BigDecimal normalizedExchangeRate = normalizeExchangeRate(currency, exchangeRate);
-
-        PaymentValidator.validate(paymentDate, source, normalizedAmount, currency, normalizedExchangeRate);
-
-        BigDecimal amountRub = calculateAmountRub(normalizedAmount, normalizedExchangeRate);
-        int feePercent = calculateFeePercent(source);
-        BigDecimal netAmountRub = calculateNetAmountRub(amountRub, feePercent);
+        NormalizedAmounts normalized = paymentCalculator.normalize(amountOriginal, currency, exchangeRate);
+        PaymentValidator.validate(
+                paymentDate, source, normalized.amountOriginal(), currency, normalized.exchangeRate());
+        PaymentAmounts amounts = paymentCalculator.calculate(
+                source, normalized, applicationSettingsService.getVkDonutFeePercent());
 
         Payment payment = new Payment(
                 participant,
                 project,
                 paymentDate,
                 source,
-                normalizedAmount,
+                amounts.amountOriginal(),
                 currency,
-                normalizedExchangeRate,
-                amountRub,
-                feePercent,
-                netAmountRub,
+                amounts.exchangeRate(),
+                amounts.amountRub(),
+                amounts.feePercent(),
+                amounts.netAmountRub(),
                 normalizedComment);
 
         return paymentRepository.save(payment);
     }
 
-    private BigDecimal normalizeAmount(BigDecimal amountOriginal) {
-        if (amountOriginal == null) {
-            return null;
+    @Transactional
+    public Payment update(Long participantId,
+                          Long paymentId,
+                          Long projectId,
+                          LocalDate paymentDate,
+                          PaymentSource source,
+                          BigDecimal amountOriginal,
+                          PaymentCurrency currency,
+                          BigDecimal exchangeRate,
+                          String comment) {
+        Payment payment = findById(participantId, paymentId);
+        ensurePaymentActive(payment);
+
+        Project project = projectService.findById(projectId);
+        projectMembershipService.getActiveMembership(projectId, participantId);
+
+        String normalizedComment = Texts.trimToNull(comment);
+        NormalizedAmounts normalized = paymentCalculator.normalize(amountOriginal, currency, exchangeRate);
+        PaymentValidator.validate(
+                paymentDate, source, normalized.amountOriginal(), currency, normalized.exchangeRate());
+        PaymentAmounts amounts = paymentCalculator.calculate(
+                source, normalized, applicationSettingsService.getVkDonutFeePercent());
+
+        payment.update(
+                project,
+                paymentDate,
+                source,
+                amounts.amountOriginal(),
+                currency,
+                amounts.exchangeRate(),
+                amounts.amountRub(),
+                amounts.feePercent(),
+                amounts.netAmountRub(),
+                normalizedComment);
+
+        return payment;
+    }
+
+    @Transactional
+    public void voidPayment(Long participantId, Long paymentId) {
+        Payment payment = findById(participantId, paymentId);
+        if (payment.getStatus() == PaymentStatus.VOIDED) {
+            throw new ValidationException(ValidationError.PAYMENT_ALREADY_VOIDED);
         }
-        return amountOriginal.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+        payment.voidPayment();
     }
 
-    private BigDecimal normalizeExchangeRate(PaymentCurrency currency, BigDecimal exchangeRate) {
-        if (currency == PaymentCurrency.RUB) {
-            return BigDecimal.ONE.setScale(EXCHANGE_RATE_SCALE, RoundingMode.HALF_UP);
+    private void ensurePaymentActive(Payment payment) {
+        if (payment.getStatus() == PaymentStatus.VOIDED) {
+            throw new ValidationException(ValidationError.PAYMENT_VOIDED);
         }
-        if (exchangeRate == null) {
-            return null;
-        }
-        return exchangeRate.setScale(EXCHANGE_RATE_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal calculateAmountRub(BigDecimal amountOriginal, BigDecimal exchangeRate) {
-        return amountOriginal.multiply(exchangeRate).setScale(MONEY_SCALE, RoundingMode.HALF_UP);
-    }
-
-    private int calculateFeePercent(PaymentSource source) {
-        return source == PaymentSource.VK_DONUT ? VK_DONUT_FEE_PERCENT : 0;
-    }
-
-    private BigDecimal calculateNetAmountRub(BigDecimal amountRub, int feePercent) {
-        return amountRub
-                .multiply(BigDecimal.valueOf(100 - feePercent))
-                .divide(BigDecimal.valueOf(100), MONEY_SCALE, RoundingMode.HALF_UP);
     }
 }

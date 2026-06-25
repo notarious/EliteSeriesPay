@@ -4,6 +4,7 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
+import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.Project;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -42,9 +43,26 @@ public final class TestEntities {
                                   int feePercent,
                                   BigDecimal netAmountRub,
                                   String comment) {
+        return payment(id, participant, project, paymentDate, source, amountOriginal, currency,
+                exchangeRate, amountRub, feePercent, netAmountRub, comment, PaymentStatus.ACTIVE);
+    }
+
+    public static Payment payment(long id,
+                                  Participant participant,
+                                  Project project,
+                                  LocalDate paymentDate,
+                                  PaymentSource source,
+                                  BigDecimal amountOriginal,
+                                  PaymentCurrency currency,
+                                  BigDecimal exchangeRate,
+                                  BigDecimal amountRub,
+                                  int feePercent,
+                                  BigDecimal netAmountRub,
+                                  String comment,
+                                  PaymentStatus status) {
         Payment payment = new Payment(
                 participant, project, paymentDate, source, amountOriginal, currency,
-                exchangeRate, amountRub, feePercent, netAmountRub, comment);
+                exchangeRate, amountRub, feePercent, netAmountRub, comment, status);
         setId(payment, id);
         return payment;
     }

@@ -67,6 +67,10 @@ public class Payment {
     @Column
     private String comment;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private PaymentStatus status;
+
     public Payment(Participant participant,
                    Project project,
                    LocalDate paymentDate,
@@ -78,6 +82,22 @@ public class Payment {
                    int feePercent,
                    BigDecimal netAmountRub,
                    String comment) {
+        this(participant, project, paymentDate, source, amountOriginal, currency, exchangeRate,
+                amountRub, feePercent, netAmountRub, comment, PaymentStatus.ACTIVE);
+    }
+
+    public Payment(Participant participant,
+                   Project project,
+                   LocalDate paymentDate,
+                   PaymentSource source,
+                   BigDecimal amountOriginal,
+                   PaymentCurrency currency,
+                   BigDecimal exchangeRate,
+                   BigDecimal amountRub,
+                   int feePercent,
+                   BigDecimal netAmountRub,
+                   String comment,
+                   PaymentStatus status) {
         this.participant = participant;
         this.project = project;
         this.paymentDate = paymentDate;
@@ -89,5 +109,32 @@ public class Payment {
         this.feePercent = feePercent;
         this.netAmountRub = netAmountRub;
         this.comment = comment;
+        this.status = status;
+    }
+
+    public void update(Project project,
+                       LocalDate paymentDate,
+                       PaymentSource source,
+                       BigDecimal amountOriginal,
+                       PaymentCurrency currency,
+                       BigDecimal exchangeRate,
+                       BigDecimal amountRub,
+                       int feePercent,
+                       BigDecimal netAmountRub,
+                       String comment) {
+        this.project = project;
+        this.paymentDate = paymentDate;
+        this.source = source;
+        this.amountOriginal = amountOriginal;
+        this.currency = currency;
+        this.exchangeRate = exchangeRate;
+        this.amountRub = amountRub;
+        this.feePercent = feePercent;
+        this.netAmountRub = netAmountRub;
+        this.comment = comment;
+    }
+
+    public void voidPayment() {
+        this.status = PaymentStatus.VOIDED;
     }
 }

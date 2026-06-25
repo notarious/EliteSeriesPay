@@ -27,10 +27,15 @@
         }
 
         .project-participants-table .col-amount {
-            width: 6rem;
+            width: 5.5rem;
+        }
+
+        .project-participants-table .col-net-amount {
+            width: 5.5rem;
         }
 
         .project-participants-table td.col-amount,
+        .project-participants-table td.col-net-amount,
         .project-participants-table th.col-actions,
         .project-participants-table td.col-actions {
             white-space: nowrap;
@@ -77,6 +82,7 @@
                 <th scope="col" class="col-vk-id">VK ID</th>
                 <th scope="col" class="col-last-payment">Последний платёж</th>
                 <th scope="col" class="col-amount text-end">Сумма</th>
+                <th scope="col" class="col-net-amount text-end">Получено</th>
                 <th scope="col" class="col-actions text-end">Действия</th>
             </tr>
             </thead>
@@ -93,6 +99,13 @@
                     <span th:if="${latestPayment == null}">—</span>
                 </td>
                 <td class="col-amount text-end" th:with="latestPayment=${latestPayments[membership.participant.id]}">
+                    <span th:if="${latestPayment != null}"
+                          th:text="${#numbers.formatDecimal(latestPayment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
+                        100.00 ₽
+                    </span>
+                    <span th:if="${latestPayment == null}">—</span>
+                </td>
+                <td class="col-net-amount text-end" th:with="latestPayment=${latestPayments[membership.participant.id]}">
                     <span th:if="${latestPayment != null}"
                           th:text="${#numbers.formatDecimal(latestPayment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
                         90.00 ₽
