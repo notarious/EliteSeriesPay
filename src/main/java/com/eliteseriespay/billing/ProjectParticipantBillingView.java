@@ -21,7 +21,7 @@ public record ProjectParticipantBillingView(Participant participant,
         return new ProjectParticipantBillingView(
                 participant,
                 BillingMode.SUBSCRIPTION,
-                "Абонемент",
+                BillingMode.SUBSCRIPTION.getDisplayName(),
                 paidUntilMonth,
                 status,
                 subscriptionStatusLabel(status),
@@ -33,11 +33,11 @@ public record ProjectParticipantBillingView(Participant participant,
         return new ProjectParticipantBillingView(
                 participant,
                 BillingMode.PACKAGE,
-                "Пакет",
+                BillingMode.PACKAGE.getDisplayName(),
                 null,
                 null,
-                "Пакет",
-                "",
+                BillingMode.PACKAGE.getDisplayName(),
+                "badge text-bg-secondary",
                 null);
     }
 
@@ -50,8 +50,8 @@ public record ProjectParticipantBillingView(Participant participant,
 
     public static String subscriptionStatusCssClass(SubscriptionPaymentStatus status) {
         return switch (status) {
-            case ACTIVE -> "text-success";
-            case NO_PAYMENTS, OVERDUE -> "text-danger";
+            case ACTIVE -> "badge text-bg-success";
+            case NO_PAYMENTS, OVERDUE -> "badge text-bg-danger";
         };
     }
 }

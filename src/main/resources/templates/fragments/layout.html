@@ -18,16 +18,20 @@
         <div class="collapse navbar-collapse" id="mainNavbar">
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/}">Главная</a>
+                    <a class="nav-link" th:href="@{/}"
+                       th:classappend="${#httpServletRequest.requestURI == '/'} ? 'active'">Главная</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/projects}">Проекты</a>
+                    <a class="nav-link" th:href="@{/projects}"
+                       th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/projects')} ? 'active'">Проекты</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/participants}">Участники</a>
+                    <a class="nav-link" th:href="@{/participants}"
+                       th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/participants')} ? 'active'">Участники</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/backups}">Резервные копии</a>
+                    <a class="nav-link" th:href="@{/backups}"
+                       th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/backups')} ? 'active'">Резервные копии</a>
                 </li>
             </ul>
         </div>

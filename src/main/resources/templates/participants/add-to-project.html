@@ -8,7 +8,11 @@
 <div th:fragment="content">
     <div class="row justify-content-center">
         <div class="col-lg-6">
-            <h1 class="mb-4">Добавить в проект</h1>
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h1 class="h3 mb-0">Добавить в проект</h1>
+                <a class="btn btn-outline-secondary btn-sm"
+                   th:href="@{/participants/{id}(id=${participantId})}">К участнику</a>
+            </div>
 
             <div th:if="${#lists.isEmpty(availableProjects)}" class="alert alert-info mb-0">
                 Нет доступных проектов. Участник уже состоит во всех проектах или проектов пока нет.

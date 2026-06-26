@@ -6,23 +6,23 @@
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Участники</h1>
-        <a class="btn btn-primary" th:href="@{/participants/new}">Новый участник</a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Участники</h1>
+        <a class="btn btn-primary btn-sm" th:href="@{/participants/new}">Новый участник</a>
     </div>
 
-    <form class="row g-3 align-items-end mb-4" method="get" th:action="@{/participants}">
-        <div class="col-sm-6 col-md-4 col-lg-3">
-            <label class="form-label" for="searchQuery">Имя или VK ID</label>
-            <input class="form-control" id="searchQuery" name="q" type="search"
+    <form class="row g-2 align-items-end mb-3" method="get" th:action="@{/participants}">
+        <div class="col-md-4 col-lg-3">
+            <label class="form-label small mb-1" for="searchQuery">Имя или VK ID</label>
+            <input class="form-control form-control-sm" id="searchQuery" name="q" type="search"
                    th:value="${searchQuery}" placeholder="Имя или VK ID">
         </div>
         <div class="col-auto">
-            <button class="btn btn-primary" type="submit">Найти</button>
+            <button class="btn btn-primary btn-sm" type="submit">Найти</button>
         </div>
         <div class="col-auto">
-            <label class="form-label" for="pageSize">На странице</label>
-            <select class="form-select" id="pageSize" name="size" onchange="this.form.submit()">
+            <label class="form-label small mb-1" for="pageSize">На странице</label>
+            <select class="form-select form-select-sm" id="pageSize" name="size" onchange="this.form.submit()">
                 <option th:each="allowedSize : ${allowedPageSizes}"
                         th:selected="${allowedSize == pageSize}"
                         th:text="${allowedSize}"
@@ -54,7 +54,7 @@
         </div>
 
         <div class="table-responsive">
-            <table class="table table-striped align-middle">
+            <table class="table table-sm table-striped align-middle">
                 <thead>
                 <tr>
                     <th scope="col">Имя</th>
@@ -78,16 +78,16 @@
                     </td>
                     <td class="text-end">
                         <div class="d-inline-flex gap-1">
-                        <a class="btn btn-sm btn-outline-secondary"
-                           th:href="@{/participants/{id}(id=${participant.id})}"
-                           data-bs-toggle="tooltip" data-bs-title="Просмотр"
-                           aria-label="Просмотр">
-                            <i class="bi bi-eye" aria-hidden="true"></i>
-                        </a>
-                        <a class="btn btn-sm btn-outline-primary"
-                           th:href="@{/participants/{id}/edit(id=${participant.id})}"
-                           data-bs-toggle="tooltip" data-bs-title="Изменить"
-                           aria-label="Изменить">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               th:href="@{/participants/{id}(id=${participant.id})}"
+                               data-bs-toggle="tooltip" data-bs-title="Просмотр"
+                               aria-label="Просмотр">
+                                <i class="bi bi-eye" aria-hidden="true"></i>
+                            </a>
+                            <a class="btn btn-sm btn-outline-primary"
+                               th:href="@{/participants/{id}/edit(id=${participant.id})}"
+                               data-bs-toggle="tooltip" data-bs-title="Изменить"
+                               aria-label="Изменить">
                                 <i class="bi bi-pencil" aria-hidden="true"></i>
                             </a>
                         </div>
@@ -98,7 +98,7 @@
         </div>
 
         <nav th:if="${participantsPage.totalPages > 1}" aria-label="Навигация по страницам">
-            <ul class="pagination justify-content-center mb-0">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
                 <li class="page-item" th:classappend="${participantsPage.first} ? 'disabled'">
                     <a class="page-link"
                        th:href="@{/participants(q=${searchQuery}, page=${participantsPage.number - 1}, size=${pageSize})}"

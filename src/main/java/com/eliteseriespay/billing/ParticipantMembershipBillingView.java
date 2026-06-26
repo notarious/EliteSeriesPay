@@ -21,7 +21,7 @@ public record ParticipantMembershipBillingView(Project project,
         return new ParticipantMembershipBillingView(
                 project,
                 BillingMode.SUBSCRIPTION,
-                "Абонемент",
+                BillingMode.SUBSCRIPTION.getDisplayName(),
                 paidUntilMonth,
                 ProjectParticipantBillingView.subscriptionStatusLabel(status),
                 ProjectParticipantBillingView.subscriptionStatusCssClass(status),
@@ -34,10 +34,10 @@ public record ParticipantMembershipBillingView(Project project,
         return new ParticipantMembershipBillingView(
                 project,
                 BillingMode.PACKAGE,
-                "Пакет",
+                BillingMode.PACKAGE.getDisplayName(),
                 null,
-                "Пакет",
-                "",
+                BillingMode.PACKAGE.getDisplayName(),
+                "badge text-bg-secondary",
                 false,
                 null);
     }

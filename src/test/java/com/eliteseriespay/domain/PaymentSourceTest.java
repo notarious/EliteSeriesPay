@@ -9,6 +9,6 @@ class PaymentSourceTest {
     @Test
     void displayNames_matchUiLabels() {
         assertThat(PaymentSource.VK_DONUT.getDisplayName()).isEqualTo("VK Donut (-10%)");
-        assertThat(PaymentSource.MANUAL.getDisplayName()).isEqualTo("Вручную");
+        assertThat(PaymentSource.MANUAL.getDisplayName()).isEqualTo("Другое");
     }
 }

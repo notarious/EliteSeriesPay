@@ -41,10 +41,7 @@ public class PaymentHistoryFormatter {
     }
 
     public String sourceLabel(PaymentSource source) {
-        return switch (source) {
-            case VK_DONUT -> "VK Donut (-10%)";
-            case MANUAL -> "Другое";
-        };
+        return source.getDisplayName();
     }
 
     public String currencyLabel(PaymentCurrency currency) {
@@ -55,14 +52,11 @@ public class PaymentHistoryFormatter {
         if (billingMode == null) {
             return "—";
         }
-        return billingMode == BillingMode.SUBSCRIPTION ? "Абонемент" : "Пакет";
+        return billingMode.getDisplayName();
     }
 
     public String statusLabel(PaymentStatus status) {
-        return switch (status) {
-            case ACTIVE -> "Активный";
-            case VOIDED -> "Аннулирован";
-        };
+        return status.getDisplayName();
     }
 
     private String formatExchangeRate(PaymentCurrency currency, BigDecimal exchangeRate) {

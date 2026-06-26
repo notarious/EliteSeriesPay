@@ -39,7 +39,7 @@ class PaymentHistoryFormatterTest {
         assertThat(row.sourceLabel()).isEqualTo("VK Donut (-10%)");
         assertThat(row.currencyLabel()).isEqualTo("RUB");
         assertThat(row.exchangeRate()).isEqualTo("—");
-        assertThat(row.statusLabel()).isEqualTo("Активный");
+        assertThat(row.statusLabel()).isEqualTo("Активен");
         assertThat(row.comment()).isEqualTo("note");
         assertThat(row.editable()).isTrue();
     }

@@ -6,33 +6,33 @@
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Резервные копии</h1>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Резервные копии</h1>
         <form method="post" th:action="@{/backups}">
-            <button class="btn btn-primary" type="submit">Создать резервную копию</button>
+            <button class="btn btn-primary btn-sm" type="submit">Создать копию</button>
         </form>
     </div>
 
-    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}">
+    <div class="alert alert-success py-2" th:if="${successMessage}" th:text="${successMessage}">
         Резервная копия создана.
     </div>
 
-    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}">
+    <div class="alert alert-danger py-2" th:if="${errorMessage}" th:text="${errorMessage}">
         Ошибка резервного копирования.
     </div>
 
-    <div class="alert alert-info">
+    <p class="text-muted small mb-3">
         Для восстановления остановите приложение и замените файл
         <span th:text="${databaseFileName}">eliteseriespay.db</span>
         нужной резервной копией.
-    </div>
+    </p>
 
-    <div th:if="${#lists.isEmpty(backups)}" class="alert alert-secondary mb-0">
+    <div th:if="${#lists.isEmpty(backups)}" class="alert alert-info mb-0">
         Резервных копий пока нет.
     </div>
 
     <div th:unless="${#lists.isEmpty(backups)}" class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-sm table-striped align-middle">
             <thead>
             <tr>
                 <th scope="col">Имя файла</th>
@@ -48,8 +48,10 @@
                 <td class="text-end" th:text="${backup.sizeFormatted}">1.2 МБ</td>
                 <td class="text-end">
                     <a class="btn btn-sm btn-outline-primary"
-                       th:href="@{/backups/{fileName}/download(fileName=${backup.fileName})}">
-                        Скачать
+                       th:href="@{/backups/{fileName}/download(fileName=${backup.fileName})}"
+                       data-bs-toggle="tooltip" data-bs-title="Скачать"
+                       aria-label="Скачать">
+                        <i class="bi bi-download" aria-hidden="true"></i>
                     </a>
                 </td>
             </tr>

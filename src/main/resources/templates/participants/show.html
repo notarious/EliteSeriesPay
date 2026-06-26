@@ -6,25 +6,25 @@
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-start mb-4">
+    <div class="d-flex justify-content-between align-items-start mb-3">
         <div>
-            <h1 class="mb-1" th:text="${participant.name}">Иван</h1>
-            <p class="text-muted mb-1">
+            <h1 class="h3 mb-1" th:text="${participant.name}">Иван</h1>
+            <p class="text-muted small mb-1">
                 VK ID: <span th:text="${participant.vkId}">12345</span>
             </p>
-            <p class="text-muted mb-0"
+            <p class="text-muted small mb-0"
                th:if="${participant.comment != null and !#strings.isEmpty(participant.comment)}">
                 Комментарий:
                 <span th:text="${participant.comment}">—</span>
             </p>
         </div>
-        <div class="d-flex gap-2">
-            <a class="btn btn-outline-secondary" th:href="@{/participants}">К списку</a>
-            <a th:if="${!#lists.isEmpty(activeMemberships)}" class="btn btn-success"
+        <div class="d-flex flex-wrap gap-2">
+            <a class="btn btn-outline-secondary btn-sm" th:href="@{/participants}">К списку</a>
+            <a th:if="${!#lists.isEmpty(activeMemberships)}" class="btn btn-success btn-sm"
                th:href="@{/participants/{id}/payments/new(id=${participant.id})}">Добавить платёж</a>
-            <a class="btn btn-primary"
+            <a class="btn btn-primary btn-sm"
                th:href="@{/participants/{id}/projects/new(id=${participant.id})}">Добавить в проект</a>
-            <a class="btn btn-outline-primary"
+            <a class="btn btn-outline-primary btn-sm"
                th:href="@{/participants/{id}/edit(id=${participant.id})}">Изменить</a>
         </div>
     </div>
@@ -33,7 +33,7 @@
         Сначала добавьте участника в проект.
     </div>
 
-    <h2 class="h4 mb-3">Платежи</h2>
+    <h2 class="h5 mb-3">Платежи</h2>
 
     <div th:if="${!paymentSummary.hasPayments()}" class="alert alert-info">
         Платежей пока нет.
@@ -75,7 +75,7 @@
         </div>
     </div>
 
-    <h2 class="h4 mb-3">Активные проекты</h2>
+    <h2 class="h5 mb-3">Активные проекты</h2>
 
     <div th:if="${#lists.isEmpty(membershipBillingViews)}" class="alert alert-info">
         Участник не состоит ни в одном активном проекте.
@@ -88,7 +88,7 @@
                 <th scope="col">Проект</th>
                 <th scope="col">Тип оплаты</th>
                 <th scope="col">Оплачен до</th>
-                <th scope="col">Статус</th>
+                <th scope="col">Статус оплаты</th>
                 <th scope="col">Аванс</th>
                 <th scope="col" class="text-end">Действия</th>
             </tr>
@@ -111,10 +111,10 @@
     </div>
 
     <div th:unless="${#lists.isEmpty(leftMemberships)}">
-        <h2 class="h4 mb-3">Покинутые проекты</h2>
+        <h2 class="h5 mb-3">Покинутые проекты</h2>
 
         <div class="table-responsive">
-            <table class="table table-striped align-middle">
+            <table class="table table-sm table-striped align-middle">
                 <thead>
                 <tr>
                     <th scope="col">Проект</th>

@@ -6,9 +6,9 @@
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">Проекты</h1>
-        <a class="btn btn-primary" th:href="@{/projects/new}">Новый проект</a>
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h1 class="h3 mb-0">Проекты</h1>
+        <a class="btn btn-primary btn-sm" th:href="@{/projects/new}">Новый проект</a>
     </div>
 
     <div th:if="${#lists.isEmpty(projects)}" class="alert alert-info mb-0">
@@ -16,7 +16,7 @@
     </div>
 
     <div th:unless="${#lists.isEmpty(projects)}" class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-sm table-striped align-middle">
             <thead>
             <tr>
                 <th scope="col">Название</th>

@@ -18,3 +18,13 @@ First provide:
 1. Findings
 2. Risk level
 3. Suggested minimal fix
+
+Additionally evaluate:
+
+- whether any service has become too large and should be split;
+- whether package boundaries still reflect responsibilities;
+- whether any repository query has become unnecessarily complex;
+- whether any helper or view-model can be simplified or merged;
+- whether any recent feature introduced technical debt that should be addressed before the first release.
+
+If no meaningful refactoring is recommended, explicitly state that the current architecture is appropriate for a first production release and that no further backend refactoring is advised.

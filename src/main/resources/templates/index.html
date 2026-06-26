@@ -9,13 +9,14 @@
     <div class="row">
         <div class="col-lg-8">
             <h1 class="mb-3">EliteSeriesPay</h1>
-            <p class="lead">
+            <p class="lead mb-4">
                 Локальное приложение для управления участниками, платежами и бюджетами небольших платных сообществ.
             </p>
-            <p class="text-muted">
-                Функции проектов, участников, платежей и отчётов будут добавлены в следующих этапах.
-            </p>
-            <a class="btn btn-primary" th:href="@{/projects}">Перейти к проектам</a>
+            <div class="d-flex flex-wrap gap-2">
+                <a class="btn btn-primary" th:href="@{/projects}">Проекты</a>
+                <a class="btn btn-outline-primary" th:href="@{/participants}">Участники</a>
+                <a class="btn btn-outline-secondary" th:href="@{/backups}">Резервные копии</a>
+            </div>
         </div>
     </div>
 </div>
