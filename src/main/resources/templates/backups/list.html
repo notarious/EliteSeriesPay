@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title>Резервные копии &mdash; EliteSeriesPay</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="mb-0">Резервные копии</h1>
+        <form method="post" th:action="@{/backups}">
+            <button class="btn btn-primary" type="submit">Создать резервную копию</button>
+        </form>
+    </div>
+
+    <div class="alert alert-success" th:if="${successMessage}" th:text="${successMessage}">
+        Резервная копия создана.
+    </div>
+
+    <div class="alert alert-danger" th:if="${errorMessage}" th:text="${errorMessage}">
+        Ошибка резервного копирования.
+    </div>
+
+    <div class="alert alert-info">
+        Для восстановления остановите приложение и замените файл
+        <span th:text="${databaseFileName}">eliteseriespay.db</span>
+        нужной резервной копией.
+    </div>
+
+    <div th:if="${#lists.isEmpty(backups)}" class="alert alert-secondary mb-0">
+        Резервных копий пока нет.
+    </div>
+
+    <div th:unless="${#lists.isEmpty(backups)}" class="table-responsive">
+        <table class="table table-striped align-middle">
+            <thead>
+            <tr>
+                <th scope="col">Имя файла</th>
+                <th scope="col">Дата и время</th>
+                <th scope="col" class="text-end">Размер</th>
+                <th scope="col" class="text-end">Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="backup : ${backups}">
+                <td th:text="${backup.fileName}">eliteseriespay-2026-06-26-12-00-00.db</td>
+                <td th:text="${backup.createdAtFormatted}">26.06.2026 12:00:00</td>
+                <td class="text-end" th:text="${backup.sizeFormatted}">1.2 МБ</td>
+                <td class="text-end">
+                    <a class="btn btn-sm btn-outline-primary"
+                       th:href="@{/backups/{fileName}/download(fileName=${backup.fileName})}">
+                        Скачать
+                    </a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+</body>
+</html>

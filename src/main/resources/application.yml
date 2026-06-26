@@ -35,6 +35,11 @@ logging:
     root: INFO
 
 eliteseriespay:
+  database-backup:
+    database-path: ./eliteseriespay.db
+    backup-directory: ./backups
+    retention-limit: 20
+    startup-enabled: true
   exchange-rate:
     api-url: https://api.frankfurter.app/latest
     connect-timeout: 5s
