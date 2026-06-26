@@ -2,7 +2,7 @@ package com.eliteseriespay.domain;
 
 public enum PaymentSource {
 
-    VK_DONUT("VK Donut"),
+    VK_DONUT("VK Donut (-10%)"),
     MANUAL("Вручную");
 
     private final String displayName;
