@@ -15,6 +15,7 @@ import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
 import com.eliteseriespay.validation.ValidationError;
+import com.eliteseriespay.web.ParticipantPaymentHistoryNavigation;
 import com.eliteseriespay.web.form.PaymentForm;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -281,6 +282,7 @@ public class ParticipantPaymentController {
         model.addAttribute("hasAnyPayments", paymentService.hasAnyPayments(participantId));
         model.addAttribute("allowedPageSizes", ParticipantPaymentHistoryFilter.ALLOWED_PAGE_SIZES);
         model.addAttribute("activeMemberships", projectMembershipService.findActiveByParticipantId(participantId));
+        model.addAttribute("historyNavigation", ParticipantPaymentHistoryNavigation.of(participantId, filter));
     }
 
     private void populateFormModel(Model model,
@@ -361,12 +363,13 @@ public class ParticipantPaymentController {
         model.addAttribute("activeMemberships", activeMemberships);
         model.addAttribute("paymentForm", paymentForm);
         model.addAttribute("historyFilter", historyFilter);
+        model.addAttribute("historyNavigation", ParticipantPaymentHistoryNavigation.of(participantId, historyFilter));
     }
 
     private String historyRedirect(Long participantId, ParticipantPaymentHistoryFilter filter) {
         UriComponentsBuilder builder = UriComponentsBuilder
                 .fromPath("/participants/" + participantId + "/payments");
-        appendHistoryQuery(builder, filter);
+        ParticipantPaymentHistoryNavigation.appendListQuery(builder, filter);
         return "redirect:" + builder.build().toUriString();
     }
 
@@ -380,30 +383,6 @@ public class ParticipantPaymentController {
                                    int size) {
         return historyRedirect(participantId, ParticipantPaymentHistoryFilter.of(
                 projectId, source, status, dateFrom, dateTo, page, size));
-    }
-
-    private void appendHistoryQuery(UriComponentsBuilder builder, ParticipantPaymentHistoryFilter filter) {
-        if (filter.projectId() != null) {
-            builder.queryParam("projectId", filter.projectId());
-        }
-        if (filter.source() != null) {
-            builder.queryParam("source", filter.source());
-        }
-        if (filter.status() != null) {
-            builder.queryParam("status", filter.status());
-        }
-        if (filter.dateFrom() != null) {
-            builder.queryParam("dateFrom", filter.dateFrom());
-        }
-        if (filter.dateTo() != null) {
-            builder.queryParam("dateTo", filter.dateTo());
-        }
-        if (filter.page() > 0) {
-            builder.queryParam("page", filter.page());
-        }
-        if (filter.pageSize() != ParticipantPaymentHistoryFilter.DEFAULT_PAGE_SIZE) {
-            builder.queryParam("size", filter.pageSize());
-        }
     }
 
     private PaymentForm toPaymentForm(Payment payment) {
