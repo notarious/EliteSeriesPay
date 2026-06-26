@@ -66,8 +66,10 @@ Useful options:
 The script:
 
 1. runs `mvn package`
-2. invokes `jpackage` to create an MSI with a bundled runtime
-3. passes `-Deliteseriespay.packaged=true` so the app stores data under `%LOCALAPPDATA%\EliteSeriesPay`
+2. verifies the Spring Boot executable JAR (`Main-Class: org.springframework.boot.loader.launch.JarLauncher`)
+3. copies only the executable JAR into `target\jpackage-input`
+4. invokes `jpackage` to create an MSI with a bundled runtime
+5. passes `-Deliteseriespay.packaged=true` so the app stores data under `%LOCALAPPDATA%\EliteSeriesPay`
 
 ## Resulting MSI
 
