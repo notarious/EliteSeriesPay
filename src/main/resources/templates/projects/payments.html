@@ -152,10 +152,7 @@
                     <td class="text-end" th:text="${row.exchangeRate}">1,0000</td>
                     <td class="text-end" th:text="${row.amountRub}">100,00 ₽</td>
                     <td class="text-end" th:text="${row.netAmountRub}">90,00 ₽</td>
-                    <td>
-                        <span th:class="${row.voided} ? 'badge text-bg-secondary' : 'badge text-bg-success'"
-                              th:text="${row.statusLabel}">Активен</span>
-                    </td>
+                    <td th:replace="~{fragments/payment-status-badge :: badgeFromVoided(${row.voided}, ${row.statusLabel})}">Активен</td>
                     <td th:text="${row.comment != null ? row.comment : '—'}">—</td>
                     <td class="text-end">
                         <div th:if="${row.editable}" class="d-inline-flex gap-1">

@@ -1,8 +1,11 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
+<span th:fragment="badgeFromVoided(voided, label)"
+      th:class="${voided} ? 'badge text-bg-secondary' : 'badge text-bg-success'"
+      th:text="${label}">Активен</span>
+
 <span th:fragment="badge(status)"
-      th:class="${status.name() == 'VOIDED'} ? 'badge text-bg-secondary' : 'badge text-bg-success'"
-      th:text="${status.displayName}">Активен</span>
+      th:replace="~{fragments/payment-status-badge :: badgeFromVoided(${status.name() == 'VOIDED'}, ${status.displayName})}">Активен</span>
 </body>
 </html>
