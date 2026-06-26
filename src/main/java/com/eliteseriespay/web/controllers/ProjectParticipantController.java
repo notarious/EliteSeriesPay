@@ -1,6 +1,7 @@
 package com.eliteseriespay.web.controllers;
 
 import com.eliteseriespay.domain.Participant;
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.service.ProjectMembershipService;
@@ -37,6 +38,7 @@ public class ProjectParticipantController {
     public String createForm(@PathVariable Long projectId, Model model) {
         model.addAttribute("projectId", projectId);
         populateNewFormModel(model, projectId, null);
+        model.addAttribute("billingModes", BillingMode.values());
         return "projects/participants/new";
     }
 
@@ -48,15 +50,19 @@ public class ProjectParticipantController {
                               Model model) {
         if (bindingResult.hasErrors()) {
             populateNewFormModel(model, projectId, "existing");
+            model.addAttribute("billingModes", BillingMode.values());
             return "projects/participants/new";
         }
 
         try {
             projectMembershipService.addParticipantToProject(
-                    projectId, existingParticipantForm.getParticipantId());
+                    projectId,
+                    existingParticipantForm.getParticipantId(),
+                    existingParticipantForm.getBillingMode());
         } catch (ValidationException ex) {
             formErrorMapper.rejectExistingParticipantForm(bindingResult, ex);
             populateNewFormModel(model, projectId, "existing");
+            model.addAttribute("billingModes", BillingMode.values());
             return "projects/participants/new";
         }
 
@@ -71,6 +77,7 @@ public class ProjectParticipantController {
         if (bindingResult.hasErrors()) {
             model.addAttribute("projectId", projectId);
             populateNewFormModel(model, projectId, "new");
+            model.addAttribute("billingModes", BillingMode.values());
             return "projects/participants/new";
         }
 
@@ -79,11 +86,13 @@ public class ProjectParticipantController {
                     projectId,
                     participantForm.getVkId(),
                     participantForm.getName(),
-                    participantForm.getComment());
+                    participantForm.getComment(),
+                    participantForm.getBillingMode());
         } catch (ValidationException ex) {
             formErrorMapper.rejectProjectParticipantForm(bindingResult, ex);
             model.addAttribute("projectId", projectId);
             populateNewFormModel(model, projectId, "new");
+            model.addAttribute("billingModes", BillingMode.values());
             return "projects/participants/new";
         }
 
@@ -169,11 +178,16 @@ public class ProjectParticipantController {
     private void populateNewFormModel(Model model, Long projectId, String addMode) {
         var availableParticipants = projectMembershipService.findParticipantsAvailableForProject(projectId);
         model.addAttribute("availableParticipants", availableParticipants);
-        if (!model.containsAttribute("existingParticipantForm")) {
-            model.addAttribute("existingParticipantForm", new ExistingParticipantForm());
-        }
+        model.addAttribute("billingModes", BillingMode.values());
         if (!model.containsAttribute("participantForm")) {
-            model.addAttribute("participantForm", new ParticipantForm());
+            ParticipantForm participantForm = new ParticipantForm();
+            participantForm.setBillingMode(BillingMode.SUBSCRIPTION);
+            model.addAttribute("participantForm", participantForm);
+        }
+        if (!model.containsAttribute("existingParticipantForm")) {
+            ExistingParticipantForm existingParticipantForm = new ExistingParticipantForm();
+            existingParticipantForm.setBillingMode(BillingMode.SUBSCRIPTION);
+            model.addAttribute("existingParticipantForm", existingParticipantForm);
         }
         if (!model.containsAttribute("addMode")) {
             String resolvedMode = addMode != null

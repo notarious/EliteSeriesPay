@@ -1,5 +1,6 @@
 package com.eliteseriespay.web.controllers;
 
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
@@ -105,7 +106,10 @@ public class ParticipantController {
 
         model.addAttribute("participantId", id);
         model.addAttribute("availableProjects", projectMembershipService.findProjectsAvailableForParticipant(id));
-        model.addAttribute("addParticipantToProjectForm", new AddParticipantToProjectForm());
+        AddParticipantToProjectForm form = new AddParticipantToProjectForm();
+        form.setBillingMode(BillingMode.SUBSCRIPTION);
+        model.addAttribute("addParticipantToProjectForm", form);
+        model.addAttribute("billingModes", BillingMode.values());
         return "participants/add-to-project";
     }
 
@@ -119,17 +123,21 @@ public class ParticipantController {
             model.addAttribute("participantId", participantId);
             model.addAttribute("availableProjects",
                     projectMembershipService.findProjectsAvailableForParticipant(participantId));
+            model.addAttribute("billingModes", BillingMode.values());
             return "participants/add-to-project";
         }
 
         try {
             projectMembershipService.addParticipantToProject(
-                    addParticipantToProjectForm.getProjectId(), participantId);
+                    addParticipantToProjectForm.getProjectId(),
+                    participantId,
+                    addParticipantToProjectForm.getBillingMode());
         } catch (ValidationException ex) {
             formErrorMapper.rejectAddToProjectForm(bindingResult, ex);
             model.addAttribute("participantId", participantId);
             model.addAttribute("availableProjects",
                     projectMembershipService.findProjectsAvailableForParticipant(participantId));
+            model.addAttribute("billingModes", BillingMode.values());
             return "participants/add-to-project";
         }
 

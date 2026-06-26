@@ -1,5 +1,6 @@
 package com.eliteseriespay.service;
 
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Project;
@@ -77,17 +78,17 @@ public class ProjectMembershipService {
     }
 
     @Transactional
-    public ProjectMembership addToProject(Long projectId, String vkId, String name, String comment) {
+    public ProjectMembership addToProject(Long projectId, String vkId, String name, String comment, BillingMode billingMode) {
         Project project = projectService.findById(projectId);
         Participant participant = participantService.findOrCreate(vkId, name, comment);
-        return activateOrCreateMembership(project, participant);
+        return activateOrCreateMembership(project, participant, billingMode);
     }
 
     @Transactional
-    public ProjectMembership addParticipantToProject(Long projectId, Long participantId) {
+    public ProjectMembership addParticipantToProject(Long projectId, Long participantId, BillingMode billingMode) {
         Project project = projectService.findById(projectId);
         Participant participant = participantService.findById(participantId);
-        return activateOrCreateMembership(project, participant);
+        return activateOrCreateMembership(project, participant, billingMode);
     }
 
     @Transactional(readOnly = true)
@@ -135,7 +136,11 @@ public class ProjectMembershipService {
         membership.markLeft();
     }
 
-    private ProjectMembership activateOrCreateMembership(Project project, Participant participant) {
+    private ProjectMembership activateOrCreateMembership(Project project,
+                                                         Participant participant,
+                                                         BillingMode billingMode) {
+        validateBillingMode(billingMode);
+
         Optional<ProjectMembership> existingMembership = projectMembershipRepository
                 .findByProject_IdAndParticipant_Id(project.getId(), participant.getId());
 
@@ -148,7 +153,14 @@ public class ProjectMembershipService {
             return membership;
         }
 
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership membership = new ProjectMembership(
+                project, participant, MembershipStatus.ACTIVE, billingMode);
         return projectMembershipRepository.save(membership);
+    }
+
+    private void validateBillingMode(BillingMode billingMode) {
+        if (billingMode == null) {
+            throw new ValidationException(ValidationError.BILLING_MODE_REQUIRED);
+        }
     }
 }

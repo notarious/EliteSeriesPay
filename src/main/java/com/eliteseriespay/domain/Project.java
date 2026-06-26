@@ -28,13 +28,26 @@ public class Project {
     @Column(name = "episode_cost_rub", nullable = false)
     private BigDecimal episodeCostRub;
 
-    public Project(String name, BigDecimal episodeCostRub) {
+    @Column(name = "monthly_fee_rub", nullable = false)
+    private BigDecimal monthlyFeeRub;
+
+    @Column(name = "monthly_fee_eur", nullable = false)
+    private BigDecimal monthlyFeeEur;
+
+    public Project(String name, BigDecimal episodeCostRub, BigDecimal monthlyFeeRub, BigDecimal monthlyFeeEur) {
         this.name = name;
         this.episodeCostRub = episodeCostRub;
+        this.monthlyFeeRub = monthlyFeeRub;
+        this.monthlyFeeEur = monthlyFeeEur;
     }
 
-    public void updateDetails(String name, BigDecimal episodeCostRub) {
+    public void updateDetails(String name,
+                              BigDecimal episodeCostRub,
+                              BigDecimal monthlyFeeRub,
+                              BigDecimal monthlyFeeEur) {
         this.name = name;
         this.episodeCostRub = episodeCostRub;
+        this.monthlyFeeRub = monthlyFeeRub;
+        this.monthlyFeeEur = monthlyFeeEur;
     }
 }

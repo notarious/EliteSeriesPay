@@ -3,48 +3,6 @@
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
     <title th:text="${project.name} + ' — EliteSeriesPay'">Проект — EliteSeriesPay</title>
-    <style>
-        .project-participants-table {
-            table-layout: fixed;
-        }
-
-        .project-participants-table .col-vk-id {
-            width: 6rem;
-        }
-
-        .project-participants-table .col-last-payment {
-            width: 5.25rem;
-        }
-
-        .project-participants-table th.col-last-payment {
-            white-space: normal;
-            line-height: 1.15;
-            font-size: 0.875rem;
-        }
-
-        .project-participants-table td.col-last-payment {
-            white-space: nowrap;
-        }
-
-        .project-participants-table .col-amount {
-            width: 5.5rem;
-        }
-
-        .project-participants-table .col-net-amount {
-            width: 5.5rem;
-        }
-
-        .project-participants-table td.col-amount,
-        .project-participants-table td.col-net-amount,
-        .project-participants-table th.col-actions,
-        .project-participants-table td.col-actions {
-            white-space: nowrap;
-        }
-
-        .project-participants-table .col-actions {
-            width: 5.25rem;
-        }
-    </style>
 </head>
 <body>
 <div th:fragment="content">
@@ -55,6 +13,14 @@
                 Стоимость эпизода:
                 <span th:text="${#numbers.formatDecimal(project.episodeCostRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
                     1,000.00 ₽
+                </span>
+                · Абонемент:
+                <span th:text="${#numbers.formatDecimal(project.monthlyFeeRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
+                    500.00 ₽
+                </span>
+                /
+                <span th:text="${#numbers.formatDecimal(project.monthlyFeeEur, 1, 'COMMA', 2, 'POINT')} + ' €'">
+                    5.00 €
                 </span>
             </p>
         </div>
@@ -70,56 +36,83 @@
            th:href="@{/projects/{projectId}/participants/new(projectId=${project.id})}">Добавить участника</a>
     </div>
 
-    <div th:if="${#lists.isEmpty(memberships)}" class="alert alert-info mb-0">
-        В проекте пока нет участников.
+    <form class="row g-3 align-items-end mb-3" method="get" th:action="@{/projects/{id}(id=${project.id})}">
+        <div class="col-md-3">
+            <label for="billingMode" class="form-label">Тип оплаты</label>
+            <select class="form-select form-select-sm" id="billingMode" name="billingMode">
+                <option value="" th:selected="${selectedBillingMode == null}">Все</option>
+                <option th:each="mode : ${billingModes}"
+                        th:value="${mode.name()}"
+                        th:selected="${selectedBillingMode == mode}"
+                        th:text="${mode.name() == 'SUBSCRIPTION' ? 'Абонемент' : 'Пакет'}">Абонемент</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label for="paymentStatus" class="form-label">Статус оплаты</label>
+            <select class="form-select form-select-sm" id="paymentStatus" name="paymentStatus">
+                <option value="" th:selected="${selectedPaymentStatus == null}">Все</option>
+                <option th:each="status : ${paymentStatuses}"
+                        th:value="${status.name()}"
+                        th:selected="${selectedPaymentStatus == status}"
+                        th:text="${status.name() == 'NO_PAYMENTS' ? 'Нет оплат' : (status.name() == 'ACTIVE' ? 'Активные' : 'Просроченные')}">
+                    Активные
+                </option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Применить</button>
+        </div>
+    </form>
+
+    <div th:if="${#lists.isEmpty(participants)}" class="alert alert-info mb-0">
+        Нет участников по выбранным фильтрам.
     </div>
 
-    <div th:unless="${#lists.isEmpty(memberships)}" class="table-responsive">
-        <table class="table table-striped align-middle project-participants-table">
+    <div th:unless="${#lists.isEmpty(participants)}" class="table-responsive">
+        <table class="table table-striped align-middle">
             <thead>
             <tr>
                 <th scope="col">Имя</th>
-                <th scope="col" class="col-vk-id">VK ID</th>
-                <th scope="col" class="col-last-payment">Последний платёж</th>
-                <th scope="col" class="col-amount text-end">Сумма</th>
-                <th scope="col" class="col-net-amount text-end">Получено</th>
-                <th scope="col" class="col-actions text-end">Действия</th>
+                <th scope="col">Тип оплаты</th>
+                <th scope="col">Оплачен до</th>
+                <th scope="col">Статус оплаты</th>
+                <th scope="col">Аванс</th>
+                <th scope="col" class="text-end">Действия</th>
             </tr>
             </thead>
             <tbody>
-            <tr th:each="membership : ${memberships}">
-                <td class="text-truncate">
-                    <a th:href="@{/participants/{id}(id=${membership.participant.id})}"
-                       th:text="${membership.participant.name}">Иван</a>
+            <tr th:each="row : ${participants}">
+                <td>
+                    <a th:href="@{/participants/{id}(id=${row.participant.id})}"
+                       th:text="${row.participant.name}">Иван</a>
                 </td>
-                <td class="col-vk-id" th:text="${membership.participant.vkId}">12345</td>
-                <td class="col-last-payment" th:with="latestPayment=${latestPayments[membership.participant.id]}">
-                    <span th:if="${latestPayment != null}"
-                          th:text="${#temporals.format(latestPayment.paymentDate, 'dd.MM.yyyy')}">01.01.2026</span>
-                    <span th:if="${latestPayment == null}">—</span>
+                <td th:text="${row.billingModeLabel}">Абонемент</td>
+                <td>
+                    <span th:if="${row.paidUntilMonth != null}"
+                          th:text="${#temporals.format(row.paidUntilMonth.atDay(1), 'MM.yyyy')}">06.2026</span>
+                    <span th:if="${row.paidUntilMonth == null}">—</span>
                 </td>
-                <td class="col-amount text-end" th:with="latestPayment=${latestPayments[membership.participant.id]}">
-                    <span th:if="${latestPayment != null}"
-                          th:text="${#numbers.formatDecimal(latestPayment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
-                        100.00 ₽
+                <td>
+                    <span th:classappend="${row.paymentStatusLabel == 'Активен'} ? 'text-success' : (${row.paymentStatusLabel == 'Просрочен'} ? 'text-danger' : '')"
+                          th:text="${row.paymentStatusLabel}">Активен</span>
+                </td>
+                <td>
+                    <span th:if="${row.partialPaymentInfo != null}"
+                          th:with="partial=${row.partialPaymentInfo}">
+                        <span th:text="${#numbers.formatDecimal(partial.advanceAmount, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
+                        <span class="text-muted">· До продления:</span>
+                        <span th:text="${#numbers.formatDecimal(partial.remainingUntilRenewal, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
                     </span>
-                    <span th:if="${latestPayment == null}">—</span>
+                    <span th:if="${row.partialPaymentInfo == null}">—</span>
                 </td>
-                <td class="col-net-amount text-end" th:with="latestPayment=${latestPayments[membership.participant.id]}">
-                    <span th:if="${latestPayment != null}"
-                          th:text="${#numbers.formatDecimal(latestPayment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
-                        90.00 ₽
-                    </span>
-                    <span th:if="${latestPayment == null}">—</span>
-                </td>
-                <td class="col-actions text-end">
+                <td class="text-end">
                     <div class="d-inline-flex gap-1">
                         <a class="btn btn-sm btn-outline-primary"
-                           th:href="@{/projects/{projectId}/participants/{participantId}/edit(projectId=${project.id}, participantId=${membership.participant.id})}"
+                           th:href="@{/projects/{projectId}/participants/{participantId}/edit(projectId=${project.id}, participantId=${row.participant.id})}"
                            title="Изменить" aria-label="Изменить">
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </a>
-                        <form th:action="@{/projects/{projectId}/participants/{participantId}/remove(projectId=${project.id}, participantId=${membership.participant.id})}"
+                        <form th:action="@{/projects/{projectId}/participants/{participantId}/remove(projectId=${project.id}, participantId=${row.participant.id})}"
                               method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-danger"
                                     title="Исключить" aria-label="Исключить"

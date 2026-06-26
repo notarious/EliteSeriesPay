@@ -35,19 +35,22 @@ public class PaymentService {
     private final ProjectMembershipService projectMembershipService;
     private final PaymentCalculator paymentCalculator;
     private final ApplicationSettingsService applicationSettingsService;
+    private final MembershipBillingService membershipBillingService;
 
     public PaymentService(PaymentRepository paymentRepository,
                           ParticipantService participantService,
                           ProjectService projectService,
                           ProjectMembershipService projectMembershipService,
                           PaymentCalculator paymentCalculator,
-                          ApplicationSettingsService applicationSettingsService) {
+                          ApplicationSettingsService applicationSettingsService,
+                          MembershipBillingService membershipBillingService) {
         this.paymentRepository = paymentRepository;
         this.participantService = participantService;
         this.projectService = projectService;
         this.projectMembershipService = projectMembershipService;
         this.paymentCalculator = paymentCalculator;
         this.applicationSettingsService = applicationSettingsService;
+        this.membershipBillingService = membershipBillingService;
     }
 
     @Transactional(readOnly = true)
@@ -161,7 +164,9 @@ public class PaymentService {
                 amounts.netAmountRub(),
                 normalizedComment);
 
-        return paymentRepository.save(payment);
+        Payment saved = paymentRepository.save(payment);
+        membershipBillingService.recalculateBilling(projectId, participantId);
+        return saved;
     }
 
     @Transactional
@@ -199,6 +204,7 @@ public class PaymentService {
                 amounts.netAmountRub(),
                 normalizedComment);
 
+        membershipBillingService.recalculateBilling(projectId, participantId);
         return payment;
     }
 
@@ -209,6 +215,7 @@ public class PaymentService {
             throw new ValidationException(ValidationError.PAYMENT_ALREADY_VOIDED);
         }
         payment.voidPayment();
+        membershipBillingService.recalculateBilling(payment.getProject().getId(), participantId);
     }
 
     private void ensurePaymentActive(Payment payment) {

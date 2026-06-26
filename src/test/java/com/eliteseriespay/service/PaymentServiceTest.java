@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.eliteseriespay.domain.ApplicationSettings;
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
@@ -66,6 +67,8 @@ class PaymentServiceTest {
     @Mock
     private ApplicationSettingsRepository applicationSettingsRepository;
 
+    private MembershipBillingService membershipBillingService;
+
     private PaymentService paymentService;
 
     private Project project;
@@ -80,13 +83,16 @@ class PaymentServiceTest {
                 projectService, participantService, projectMembershipRepository);
         ApplicationSettingsService applicationSettingsService =
                 new ApplicationSettingsService(applicationSettingsRepository);
+        membershipBillingService = new MembershipBillingService(
+                projectMembershipRepository, paymentRepository, new MembershipBillingCalculator());
         paymentService = new PaymentService(
                 paymentRepository, participantService, projectService, projectMembershipService,
-                new PaymentCalculator(), applicationSettingsService);
+                new PaymentCalculator(), applicationSettingsService, membershipBillingService);
 
-        project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"),
+                new BigDecimal("500.00"), new BigDecimal("5.00"));
         participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        activeMembership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        activeMembership = TestEntities.membership(project, participant, MembershipStatus.ACTIVE);
     }
 
     @Test

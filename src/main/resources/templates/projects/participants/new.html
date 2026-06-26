@@ -49,6 +49,18 @@
                                  th:errors="*{participantId}"></div>
                         </div>
 
+                        <div class="mb-3">
+                            <label for="existingBillingMode" class="form-label">Тип оплаты</label>
+                            <select class="form-select" id="existingBillingMode" th:field="*{billingMode}"
+                                    th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
+                                <option th:each="mode : ${billingModes}"
+                                        th:value="${mode.name()}"
+                                        th:text="${mode.name() == 'SUBSCRIPTION' ? 'Абонемент' : 'Пакет'}">Абонемент</option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
+                                 th:errors="*{billingMode}"></div>
+                        </div>
+
                         <button type="submit" class="btn btn-primary">Добавить</button>
                     </form>
                 </div>
@@ -73,6 +85,18 @@
                                    th:classappend="${#fields.hasErrors('name')} ? 'is-invalid'">
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}"
                                  th:errors="*{name}"></div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="billingMode" class="form-label">Тип оплаты</label>
+                            <select class="form-select" id="billingMode" th:field="*{billingMode}"
+                                    th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
+                                <option th:each="mode : ${billingModes}"
+                                        th:value="${mode.name()}"
+                                        th:text="${mode.name() == 'SUBSCRIPTION' ? 'Абонемент' : 'Пакет'}">Абонемент</option>
+                            </select>
+                            <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
+                                 th:errors="*{billingMode}"></div>
                         </div>
 
                         <div class="mb-4">

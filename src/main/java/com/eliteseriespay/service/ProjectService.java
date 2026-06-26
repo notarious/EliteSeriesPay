@@ -37,26 +37,38 @@ public class ProjectService {
     }
 
     @Transactional
-    public Project create(String name, BigDecimal episodeCostRub) {
+    public Project create(String name,
+                          BigDecimal episodeCostRub,
+                          BigDecimal monthlyFeeRub,
+                          BigDecimal monthlyFeeEur) {
         String normalizedName = Texts.trim(name);
-        validateProject(normalizedName, episodeCostRub);
+        validateProject(normalizedName, episodeCostRub, monthlyFeeRub, monthlyFeeEur);
 
-        Project project = new Project(normalizedName, episodeCostRub);
+        Project project = new Project(normalizedName, episodeCostRub, monthlyFeeRub, monthlyFeeEur);
         return projectRepository.save(project);
     }
 
     @Transactional
-    public Project update(Long id, String name, BigDecimal episodeCostRub) {
+    public Project update(Long id,
+                          String name,
+                          BigDecimal episodeCostRub,
+                          BigDecimal monthlyFeeRub,
+                          BigDecimal monthlyFeeEur) {
         String normalizedName = Texts.trim(name);
-        validateProject(normalizedName, episodeCostRub);
+        validateProject(normalizedName, episodeCostRub, monthlyFeeRub, monthlyFeeEur);
 
         Project project = findById(id);
-        project.updateDetails(normalizedName, episodeCostRub);
+        project.updateDetails(normalizedName, episodeCostRub, monthlyFeeRub, monthlyFeeEur);
         return project;
     }
 
-    private void validateProject(String name, BigDecimal episodeCostRub) {
+    private void validateProject(String name,
+                                 BigDecimal episodeCostRub,
+                                 BigDecimal monthlyFeeRub,
+                                 BigDecimal monthlyFeeEur) {
         ProjectValidator.validateName(name);
         ProjectValidator.validateEpisodeCost(episodeCostRub);
+        ProjectValidator.validateMonthlyFeeRub(monthlyFeeRub);
+        ProjectValidator.validateMonthlyFeeEur(monthlyFeeEur);
     }
 }

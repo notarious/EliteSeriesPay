@@ -1,14 +1,19 @@
 package com.eliteseriespay.web.controllers;
 
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Project;
+import com.eliteseriespay.domain.SubscriptionPaymentStatus;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
-import com.eliteseriespay.service.PaymentService;
+import com.eliteseriespay.service.BillingModeFilter;
+import com.eliteseriespay.service.MembershipBillingService;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
+import com.eliteseriespay.service.SubscriptionPaymentStatusFilter;
 import com.eliteseriespay.web.FormErrorMapper;
 import com.eliteseriespay.web.form.ProjectForm;
 import jakarta.validation.Valid;
+import java.time.YearMonth;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -18,6 +23,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequestMapping("/projects")
@@ -25,16 +31,16 @@ public class ProjectController {
 
     private final ProjectService projectService;
     private final ProjectMembershipService projectMembershipService;
-    private final PaymentService paymentService;
+    private final MembershipBillingService membershipBillingService;
     private final FormErrorMapper formErrorMapper;
 
     public ProjectController(ProjectService projectService,
                              ProjectMembershipService projectMembershipService,
-                             PaymentService paymentService,
+                             MembershipBillingService membershipBillingService,
                              FormErrorMapper formErrorMapper) {
         this.projectService = projectService;
         this.projectMembershipService = projectMembershipService;
-        this.paymentService = paymentService;
+        this.membershipBillingService = membershipBillingService;
         this.formErrorMapper = formErrorMapper;
     }
 
@@ -58,7 +64,11 @@ public class ProjectController {
         }
 
         try {
-            Project project = projectService.create(projectForm.getName(), projectForm.getEpisodeCostRub());
+            Project project = projectService.create(
+                    projectForm.getName(),
+                    projectForm.getEpisodeCostRub(),
+                    projectForm.getMonthlyFeeRub(),
+                    projectForm.getMonthlyFeeEur());
             return "redirect:/projects/" + project.getId();
         } catch (ValidationException ex) {
             formErrorMapper.rejectProjectForm(bindingResult, ex);
@@ -67,11 +77,24 @@ public class ProjectController {
     }
 
     @GetMapping("/{id}")
-    public String show(@PathVariable Long id, Model model) {
+    public String show(@PathVariable Long id,
+                       @RequestParam(required = false) BillingMode billingMode,
+                       @RequestParam(required = false) SubscriptionPaymentStatus paymentStatus,
+                       Model model) {
         Project project = projectService.findById(id);
+        var memberships = projectMembershipService.findActiveByProjectId(id);
+        var participants = membershipBillingService.buildProjectParticipantViews(
+                memberships,
+                BillingModeFilter.of(billingMode),
+                SubscriptionPaymentStatusFilter.of(paymentStatus),
+                YearMonth.now());
+
         model.addAttribute("project", project);
-        model.addAttribute("memberships", projectMembershipService.findActiveByProjectId(id));
-        model.addAttribute("latestPayments", paymentService.findLatestPaymentsByProjectId(id));
+        model.addAttribute("participants", participants);
+        model.addAttribute("selectedBillingMode", billingMode);
+        model.addAttribute("selectedPaymentStatus", paymentStatus);
+        model.addAttribute("billingModes", BillingMode.values());
+        model.addAttribute("paymentStatuses", SubscriptionPaymentStatus.values());
         return "projects/show";
     }
 
@@ -82,6 +105,8 @@ public class ProjectController {
         ProjectForm projectForm = new ProjectForm();
         projectForm.setName(project.getName());
         projectForm.setEpisodeCostRub(project.getEpisodeCostRub());
+        projectForm.setMonthlyFeeRub(project.getMonthlyFeeRub());
+        projectForm.setMonthlyFeeEur(project.getMonthlyFeeEur());
 
         model.addAttribute("projectForm", projectForm);
         model.addAttribute("projectId", id);
@@ -99,7 +124,12 @@ public class ProjectController {
         }
 
         try {
-            projectService.update(id, projectForm.getName(), projectForm.getEpisodeCostRub());
+            projectService.update(
+                    id,
+                    projectForm.getName(),
+                    projectForm.getEpisodeCostRub(),
+                    projectForm.getMonthlyFeeRub(),
+                    projectForm.getMonthlyFeeEur());
         } catch (ValidationException ex) {
             formErrorMapper.rejectProjectForm(bindingResult, ex);
             model.addAttribute("projectId", id);

@@ -35,7 +35,7 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void findByParticipantIdOrderByPaymentDateDescIdDesc_sortsNewestFirst() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         Payment older = savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
@@ -49,8 +49,8 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void findFirstByParticipantIdAndProjectIdAndStatusOrderByPaymentDateDescIdDesc_returnsLatestActiveForProject() {
-        Project projectA = projectRepository.save(new Project("Series A", new BigDecimal("1000.00")));
-        Project projectB = projectRepository.save(new Project("Series B", new BigDecimal("1000.00")));
+        Project projectA = projectRepository.save(new Project("Series A", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
+        Project projectB = projectRepository.save(new Project("Series B", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         savePayment(participant, projectA, LocalDate.of(2026, 1, 1), "100.00");
@@ -68,7 +68,7 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void sumActiveNetAmountRubByParticipantId_returnsTotalActiveNetAmount() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
@@ -81,7 +81,7 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void sumActiveNetAmountRubByParticipantId_excludesVoidedPayments() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
@@ -94,7 +94,7 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void findLatestActivePaymentsByProjectId_returnsLatestActivePaymentPerParticipant() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant ivan = participantRepository.save(new Participant("12345", "Ivan", null));
         Participant anna = participantRepository.save(new Participant("67890", "Anna", null));
 
@@ -110,7 +110,7 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void findLatestActivePaymentsByProjectId_skipsVoidedPayments() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         Payment activeOlder = savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");
@@ -123,7 +123,7 @@ class PaymentRepositoryQueryTest {
 
     @Test
     void findFirstByParticipantIdAndStatusOrderByPaymentDateDescIdDesc_skipsVoidedPayments() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
 
         Payment activeOlder = savePayment(participant, project, LocalDate.of(2026, 1, 1), "100.00");

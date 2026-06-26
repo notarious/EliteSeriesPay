@@ -22,4 +22,22 @@ public final class ProjectValidator {
             throw new ValidationException(ValidationError.EPISODE_COST_NOT_POSITIVE);
         }
     }
+
+    public static void validateMonthlyFeeRub(BigDecimal monthlyFeeRub) {
+        if (monthlyFeeRub == null) {
+            throw new ValidationException(ValidationError.MONTHLY_FEE_RUB_REQUIRED);
+        }
+        if (monthlyFeeRub.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException(ValidationError.MONTHLY_FEE_RUB_NOT_POSITIVE);
+        }
+    }
+
+    public static void validateMonthlyFeeEur(BigDecimal monthlyFeeEur) {
+        if (monthlyFeeEur == null) {
+            throw new ValidationException(ValidationError.MONTHLY_FEE_EUR_REQUIRED);
+        }
+        if (monthlyFeeEur.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ValidationException(ValidationError.MONTHLY_FEE_EUR_NOT_POSITIVE);
+        }
+    }
 }

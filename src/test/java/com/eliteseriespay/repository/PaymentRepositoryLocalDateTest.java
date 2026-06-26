@@ -37,7 +37,8 @@ class PaymentRepositoryLocalDateTest {
 
     @Test
     void savesAndReadsPaymentDateAsIsoText() {
-        Project project = projectRepository.save(new Project("Series", new BigDecimal("1000.00")));
+        Project project = projectRepository.save(
+                new Project("Series", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
         Participant participant = participantRepository.save(new Participant("12345", "Ivan", null));
         LocalDate paymentDate = LocalDate.of(2026, 6, 21);
 

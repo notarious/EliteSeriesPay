@@ -19,13 +19,31 @@
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
                 </div>
 
-                <div class="mb-4">
+                <div class="mb-3">
                     <label for="episodeCostRub" class="form-label">Стоимость эпизода (₽)</label>
                     <input type="number" class="form-control" id="episodeCostRub" th:field="*{episodeCostRub}"
                            step="0.01" min="0.01"
                            th:classappend="${#fields.hasErrors('episodeCostRub')} ? 'is-invalid'">
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('episodeCostRub')}"
                          th:errors="*{episodeCostRub}"></div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="monthlyFeeRub" class="form-label">Абонентская плата (₽)</label>
+                    <input type="number" class="form-control" id="monthlyFeeRub" th:field="*{monthlyFeeRub}"
+                           step="0.01" min="0.01"
+                           th:classappend="${#fields.hasErrors('monthlyFeeRub')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('monthlyFeeRub')}"
+                         th:errors="*{monthlyFeeRub}"></div>
+                </div>
+
+                <div class="mb-4">
+                    <label for="monthlyFeeEur" class="form-label">Абонентская плата (€)</label>
+                    <input type="number" class="form-control" id="monthlyFeeEur" th:field="*{monthlyFeeEur}"
+                           step="0.01" min="0.01"
+                           th:classappend="${#fields.hasErrors('monthlyFeeEur')} ? 'is-invalid'">
+                    <div class="invalid-feedback" th:if="${#fields.hasErrors('monthlyFeeEur')}"
+                         th:errors="*{monthlyFeeEur}"></div>
                 </div>
 
                 <div class="d-flex gap-2">

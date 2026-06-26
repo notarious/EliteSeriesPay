@@ -1,6 +1,8 @@
 package com.eliteseriespay.domain;
 
+import com.eliteseriespay.domain.converter.YearMonthStringConverter;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -11,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import java.math.BigDecimal;
+import java.time.YearMonth;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -41,10 +45,26 @@ public class ProjectMembership {
     @Column(nullable = false)
     private MembershipStatus status;
 
-    public ProjectMembership(Project project, Participant participant, MembershipStatus status) {
+    @Enumerated(EnumType.STRING)
+    @Column(name = "billing_mode", nullable = false)
+    private BillingMode billingMode;
+
+    @Convert(converter = YearMonthStringConverter.class)
+    @Column(name = "paid_until_month", columnDefinition = "TEXT")
+    private YearMonth paidUntilMonth;
+
+    @Column(name = "partial_payment_amount")
+    private BigDecimal partialPaymentAmount;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "partial_payment_currency")
+    private PaymentCurrency partialPaymentCurrency;
+
+    public ProjectMembership(Project project, Participant participant, MembershipStatus status, BillingMode billingMode) {
         this.project = project;
         this.participant = participant;
         this.status = status;
+        this.billingMode = billingMode;
     }
 
     public void markActive() {
@@ -53,5 +73,13 @@ public class ProjectMembership {
 
     public void markLeft() {
         this.status = MembershipStatus.LEFT;
+    }
+
+    public void updateBilling(YearMonth paidUntilMonth,
+                              BigDecimal partialPaymentAmount,
+                              PaymentCurrency partialPaymentCurrency) {
+        this.paidUntilMonth = paidUntilMonth;
+        this.partialPaymentAmount = partialPaymentAmount;
+        this.partialPaymentCurrency = partialPaymentCurrency;
     }
 }

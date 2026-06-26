@@ -2,6 +2,7 @@ package com.eliteseriespay.repository;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
@@ -53,10 +54,14 @@ class PaymentRepositoryHistoryTest {
         projectRepository.deleteAll();
 
         participant = participantRepository.save(new Participant("12345", "Ivan", null));
-        projectA = projectRepository.save(new Project("Series A", new BigDecimal("1000.00")));
-        projectB = projectRepository.save(new Project("Series B", new BigDecimal("1000.00")));
-        projectMembershipRepository.save(new ProjectMembership(projectA, participant, MembershipStatus.ACTIVE));
-        projectMembershipRepository.save(new ProjectMembership(projectB, participant, MembershipStatus.ACTIVE));
+        projectA = projectRepository.save(
+                new Project("Series A", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
+        projectB = projectRepository.save(
+                new Project("Series B", new BigDecimal("1000.00"), new BigDecimal("1000.00"), BigDecimal.ONE));
+        projectMembershipRepository.save(new ProjectMembership(
+                projectA, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION));
+        projectMembershipRepository.save(new ProjectMembership(
+                projectB, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION));
     }
 
     @Test

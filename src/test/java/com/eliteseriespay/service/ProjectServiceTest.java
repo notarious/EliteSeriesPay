@@ -34,7 +34,8 @@ class ProjectServiceTest {
     void create_trimsNameAndSavesProject() {
         when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Project created = projectService.create("  My project  ", new BigDecimal("1500.50"));
+        Project created = projectService.create(
+                "  My project  ", new BigDecimal("1500.50"), new BigDecimal("500.00"), new BigDecimal("5.00"));
 
         ArgumentCaptor<Project> projectCaptor = ArgumentCaptor.forClass(Project.class);
         verify(projectRepository).save(projectCaptor.capture());
@@ -46,7 +47,7 @@ class ProjectServiceTest {
 
     @Test
     void create_rejectsBlankName() {
-        assertThatThrownBy(() -> projectService.create("  ", new BigDecimal("100.00")))
+        assertThatThrownBy(() -> projectService.create("  ", new BigDecimal("100.00"), new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PROJECT_NAME_REQUIRED));
@@ -54,7 +55,7 @@ class ProjectServiceTest {
 
     @Test
     void create_rejectsMissingEpisodeCost() {
-        assertThatThrownBy(() -> projectService.create("My project", null))
+        assertThatThrownBy(() -> projectService.create("My project", null, new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.EPISODE_COST_REQUIRED));
@@ -62,7 +63,7 @@ class ProjectServiceTest {
 
     @Test
     void create_rejectsNonPositiveEpisodeCost() {
-        assertThatThrownBy(() -> projectService.create("My project", BigDecimal.ZERO))
+        assertThatThrownBy(() -> projectService.create("My project", BigDecimal.ZERO, new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.EPISODE_COST_NOT_POSITIVE));
@@ -73,7 +74,7 @@ class ProjectServiceTest {
         Project existing = TestEntities.project(1L, "Old name", new BigDecimal("100.00"));
         when(projectRepository.findById(1L)).thenReturn(Optional.of(existing));
 
-        Project updated = projectService.update(1L, "  New name  ", new BigDecimal("250.75"));
+        Project updated = projectService.update(1L, "  New name  ", new BigDecimal("250.75"), new BigDecimal("100.00"), new BigDecimal("10.00"));
 
         assertThat(updated.getName()).isEqualTo("New name");
         assertThat(updated.getEpisodeCostRub()).isEqualByComparingTo("250.75");
@@ -81,7 +82,7 @@ class ProjectServiceTest {
 
     @Test
     void update_rejectsBlankName() {
-        assertThatThrownBy(() -> projectService.update(1L, "  ", new BigDecimal("100.00")))
+        assertThatThrownBy(() -> projectService.update(1L, "  ", new BigDecimal("100.00"), new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PROJECT_NAME_REQUIRED));
@@ -89,7 +90,7 @@ class ProjectServiceTest {
 
     @Test
     void update_rejectsMissingEpisodeCost() {
-        assertThatThrownBy(() -> projectService.update(1L, "My project", null))
+        assertThatThrownBy(() -> projectService.update(1L, "My project", null, new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.EPISODE_COST_REQUIRED));
@@ -97,7 +98,7 @@ class ProjectServiceTest {
 
     @Test
     void update_rejectsNonPositiveEpisodeCost() {
-        assertThatThrownBy(() -> projectService.update(1L, "My project", BigDecimal.ZERO))
+        assertThatThrownBy(() -> projectService.update(1L, "My project", BigDecimal.ZERO, new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.EPISODE_COST_NOT_POSITIVE));
@@ -107,7 +108,7 @@ class ProjectServiceTest {
     void update_throwsWhenProjectNotFound() {
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectService.update(99L, "Name", new BigDecimal("100.00")))
+        assertThatThrownBy(() -> projectService.update(99L, "Name", new BigDecimal("100.00"), new BigDecimal("50.00"), new BigDecimal("5.00")))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found: 99");
     }

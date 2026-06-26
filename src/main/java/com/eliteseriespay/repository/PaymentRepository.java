@@ -97,4 +97,14 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             )
             """)
     List<Payment> findLatestActivePaymentsByProjectId(@Param("projectId") Long projectId);
+
+    @Query("""
+            SELECT p FROM Payment p
+            WHERE p.project.id = :projectId
+            AND p.participant.id = :participantId
+            AND p.status = com.eliteseriespay.domain.PaymentStatus.ACTIVE
+            ORDER BY p.paymentDate ASC, p.id ASC
+            """)
+    List<Payment> findActivePaymentsByProjectAndParticipant(@Param("projectId") Long projectId,
+                                                            @Param("participantId") Long participantId);
 }

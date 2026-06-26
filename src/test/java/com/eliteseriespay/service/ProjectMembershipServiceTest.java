@@ -7,6 +7,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Project;
@@ -69,7 +70,7 @@ class ProjectMembershipServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectMembership membership = projectMembershipService.addToProject(
-                PROJECT_ID, "12345", "Ivan", null);
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
 
         assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
         assertThat(membership.getProject()).isEqualTo(project);
@@ -91,7 +92,7 @@ class ProjectMembershipServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectMembership membership = projectMembershipService.addToProject(
-                PROJECT_ID, "12345", "Ivan", null);
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
 
         assertThat(membership.getParticipant()).isEqualTo(participant);
         verify(participantRepository, never()).save(any(Participant.class));
@@ -102,14 +103,14 @@ class ProjectMembershipServiceTest {
     void addToProject_reactivatesLeftMembership() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findByVkId("12345")).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(existing));
 
         ProjectMembership membership = projectMembershipService.addToProject(
-                PROJECT_ID, "12345", "Ivan", null);
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
 
         assertThat(membership).isSameAs(existing);
         assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
@@ -120,13 +121,13 @@ class ProjectMembershipServiceTest {
     void addToProject_rejectsAlreadyActiveMember() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findByVkId("12345")).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> projectMembershipService.addToProject(PROJECT_ID, "12345", "Ivan", null))
+        assertThatThrownBy(() -> projectMembershipService.addToProject(PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PARTICIPANT_ALREADY_ACTIVE));
@@ -137,7 +138,7 @@ class ProjectMembershipServiceTest {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(
                 TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"))));
 
-        assertThatThrownBy(() -> projectMembershipService.addToProject(PROJECT_ID, "  ", "Ivan", null))
+        assertThatThrownBy(() -> projectMembershipService.addToProject(PROJECT_ID, "  ", "Ivan", null, BillingMode.SUBSCRIPTION))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.VK_ID_REQUIRED));
@@ -148,7 +149,7 @@ class ProjectMembershipServiceTest {
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(
                 TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"))));
 
-        assertThatThrownBy(() -> projectMembershipService.addToProject(PROJECT_ID, "12345", "  ", null))
+        assertThatThrownBy(() -> projectMembershipService.addToProject(PROJECT_ID, "12345", "  ", null, BillingMode.SUBSCRIPTION))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PARTICIPANT_NAME_REQUIRED));
@@ -158,7 +159,7 @@ class ProjectMembershipServiceTest {
     void addToProject_throwsWhenProjectNotFound() {
         when(projectRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectMembershipService.addToProject(99L, "12345", "Ivan", null))
+        assertThatThrownBy(() -> projectMembershipService.addToProject(99L, "12345", "Ivan", null, BillingMode.SUBSCRIPTION))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Project not found: 99");
     }
@@ -167,7 +168,7 @@ class ProjectMembershipServiceTest {
     void removeFromProject_marksMembershipAsLeft() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
@@ -183,7 +184,7 @@ class ProjectMembershipServiceTest {
     void removeFromProject_rejectsWhenNotActiveMember() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
@@ -210,7 +211,7 @@ class ProjectMembershipServiceTest {
     void findActiveParticipant_returnsParticipantForActiveMembership() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
@@ -225,7 +226,7 @@ class ProjectMembershipServiceTest {
     void findActiveParticipant_rejectsLeftMembership() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
@@ -250,7 +251,7 @@ class ProjectMembershipServiceTest {
     void findActiveByProjectId_returnsActiveMemberships() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership activeMembership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership activeMembership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(projectMembershipRepository.findByProjectIdAndStatus(PROJECT_ID, MembershipStatus.ACTIVE))
                 .thenReturn(List.of(activeMembership));
@@ -264,7 +265,7 @@ class ProjectMembershipServiceTest {
     void updateParticipant_requiresActiveMembership() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(participantRepository.findByVkId("67890")).thenReturn(Optional.empty());
@@ -292,7 +293,7 @@ class ProjectMembershipServiceTest {
     void findActiveByParticipantId_returnsActiveMemberships() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership activeMembership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership activeMembership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByParticipantIdAndStatus(PARTICIPANT_ID, MembershipStatus.ACTIVE))
                 .thenReturn(List.of(activeMembership));
@@ -306,7 +307,7 @@ class ProjectMembershipServiceTest {
     void findLeftByParticipantId_returnsLeftMemberships() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership leftMembership = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        ProjectMembership leftMembership = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByParticipantIdAndStatus(PARTICIPANT_ID, MembershipStatus.LEFT))
                 .thenReturn(List.of(leftMembership));
@@ -338,7 +339,7 @@ class ProjectMembershipServiceTest {
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ProjectMembership membership = projectMembershipService.addParticipantToProject(
-                PROJECT_ID, PARTICIPANT_ID);
+                PROJECT_ID, PARTICIPANT_ID, BillingMode.PACKAGE);
 
         assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
         assertThat(membership.getProject()).isEqualTo(project);
@@ -350,14 +351,14 @@ class ProjectMembershipServiceTest {
     void addParticipantToProject_reactivatesLeftMembership() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(existing));
 
         ProjectMembership membership = projectMembershipService.addParticipantToProject(
-                PROJECT_ID, PARTICIPANT_ID);
+                PROJECT_ID, PARTICIPANT_ID, BillingMode.PACKAGE);
 
         assertThat(membership).isSameAs(existing);
         assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
@@ -368,13 +369,13 @@ class ProjectMembershipServiceTest {
     void addParticipantToProject_rejectsAlreadyActiveMember() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(existing));
 
-        assertThatThrownBy(() -> projectMembershipService.addParticipantToProject(PROJECT_ID, PARTICIPANT_ID))
+        assertThatThrownBy(() -> projectMembershipService.addParticipantToProject(PROJECT_ID, PARTICIPANT_ID, BillingMode.SUBSCRIPTION))
                 .isInstanceOf(ValidationException.class)
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.PARTICIPANT_ALREADY_ACTIVE));
@@ -386,7 +387,7 @@ class ProjectMembershipServiceTest {
                 TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"))));
         when(participantRepository.findById(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> projectMembershipService.addParticipantToProject(PROJECT_ID, 99L))
+        assertThatThrownBy(() -> projectMembershipService.addParticipantToProject(PROJECT_ID, 99L, BillingMode.SUBSCRIPTION))
                 .isInstanceOf(NotFoundException.class)
                 .hasMessage("Participant not found: 99");
     }
@@ -408,7 +409,7 @@ class ProjectMembershipServiceTest {
     void getActiveMembership_returnsMembershipWhenActive() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
-        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE);
+        ProjectMembership membership = new ProjectMembership(project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
@@ -433,7 +434,7 @@ class ProjectMembershipServiceTest {
                 .satisfies(ex -> assertThat(((ValidationException) ex).getError())
                         .isEqualTo(ValidationError.NOT_AN_ACTIVE_MEMBER));
 
-        ProjectMembership leftMembership = new ProjectMembership(project, participant, MembershipStatus.LEFT);
+        ProjectMembership leftMembership = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(leftMembership));
 

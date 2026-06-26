@@ -15,4 +15,10 @@ public class ProjectForm {
 
     @NotNull(message = "Укажите стоимость эпизода")
     private BigDecimal episodeCostRub;
+
+    @NotNull(message = "Укажите абонентскую плату в рублях")
+    private BigDecimal monthlyFeeRub;
+
+    @NotNull(message = "Укажите абонентскую плату в евро")
+    private BigDecimal monthlyFeeEur;
 }
