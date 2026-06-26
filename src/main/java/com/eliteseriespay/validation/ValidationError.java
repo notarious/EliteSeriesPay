@@ -23,7 +23,11 @@ public enum ValidationError {
     EXCHANGE_RATE_REQUIRED("Укажите курс"),
     EXCHANGE_RATE_NOT_POSITIVE("Курс должен быть больше нуля"),
     PAYMENT_VOIDED("Аннулированный платёж нельзя изменить"),
-    PAYMENT_ALREADY_VOIDED("Платёж уже аннулирован");
+    PAYMENT_ALREADY_VOIDED("Платёж уже аннулирован"),
+    INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT(
+            "Для вступления в проект по абонементу нужно оплатить полный месячный абонемент"),
+    INITIAL_SUBSCRIPTION_PAYMENT_USD_NOT_SUPPORTED(
+            "Для первого платежа по абонементу выберите рубли или евро");
 
     private final String message;
 

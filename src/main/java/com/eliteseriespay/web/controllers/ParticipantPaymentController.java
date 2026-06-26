@@ -544,10 +544,11 @@ public class ParticipantPaymentController {
         String field = switch (error) {
             case NOT_AN_ACTIVE_MEMBER -> "projectId";
             case PAYMENT_DATE_REQUIRED -> "paymentDate";
-            case PAYMENT_AMOUNT_REQUIRED, PAYMENT_AMOUNT_NOT_POSITIVE -> "amountOriginal";
+            case PAYMENT_AMOUNT_REQUIRED, PAYMENT_AMOUNT_NOT_POSITIVE,
+                 INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT -> "amountOriginal";
             case EXCHANGE_RATE_REQUIRED, EXCHANGE_RATE_NOT_POSITIVE -> "exchangeRate";
             case PAYMENT_SOURCE_REQUIRED -> "source";
-            case PAYMENT_CURRENCY_REQUIRED -> "currency";
+            case PAYMENT_CURRENCY_REQUIRED, INITIAL_SUBSCRIPTION_PAYMENT_USD_NOT_SUPPORTED -> "currency";
             case PAYMENT_VOIDED, PAYMENT_ALREADY_VOIDED -> null;
             default -> throw new IllegalStateException("Unexpected validation error: " + error);
         };

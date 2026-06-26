@@ -17,6 +17,7 @@ import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.PaymentRepository;
 import com.eliteseriespay.util.Texts;
+import com.eliteseriespay.validation.InitialSubscriptionPaymentValidator;
 import com.eliteseriespay.validation.PaymentValidator;
 import com.eliteseriespay.validation.ValidationError;
 import java.math.BigDecimal;
@@ -186,19 +187,19 @@ public class PaymentService {
                                                   BigDecimal exchangeRate,
                                                   String comment) {
         participantService.findById(participantId);
-        projectService.findById(projectId);
+        Project project = projectService.findById(projectId);
 
         String normalizedComment = Texts.trimToNull(comment);
         NormalizedAmounts normalized = paymentCalculator.normalize(amountOriginal, currency, exchangeRate);
         PaymentValidator.validate(
                 paymentDate, source, normalized.amountOriginal(), currency, normalized.exchangeRate());
+        InitialSubscriptionPaymentValidator.validate(project, normalized.amountOriginal(), currency);
         PaymentAmounts amounts = paymentCalculator.calculate(
                 source, normalized, applicationSettingsService.getVkDonutFeePercent());
 
         projectMembershipService.completeSubscriptionAdd(projectId, participantId);
 
         Participant participant = participantService.findById(participantId);
-        Project project = projectService.findById(projectId);
 
         Payment payment = new Payment(
                 participant,

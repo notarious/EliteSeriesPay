@@ -5,6 +5,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -629,6 +630,109 @@ class PaymentServiceTest {
 
         assertThat(payment.getAmountOriginal()).isEqualByComparingTo("500.00");
         verify(projectMembershipRepository).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void createInitialMembershipPayment_rejectsAmountBelowMonthlyFeeRub() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> paymentService.createInitialMembershipPayment(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("499.99"), PaymentCurrency.RUB, null, null))
+                .isInstanceOf(ValidationException.class)
+                .extracting(ex -> ((ValidationException) ex).getError())
+                .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT);
+
+        verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void createInitialMembershipPayment_acceptsAmountAboveMonthlyFeeRub() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+        when(projectMembershipRepository.save(any(ProjectMembership.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
+                .thenReturn(Optional.of(new ApplicationSettings(10)));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Payment payment = paymentService.createInitialMembershipPayment(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("750.00"), PaymentCurrency.RUB, null, null);
+
+        assertThat(payment.getAmountOriginal()).isEqualByComparingTo("750.00");
+        verify(projectMembershipRepository).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void createInitialMembershipPayment_rejectsEurAmountBelowMonthlyFee() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> paymentService.createInitialMembershipPayment(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("4.99"), PaymentCurrency.EUR, new BigDecimal("100.0000"), null))
+                .isInstanceOf(ValidationException.class)
+                .extracting(ex -> ((ValidationException) ex).getError())
+                .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT);
+
+        verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void createInitialMembershipPayment_rejectsUsdCurrency() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+
+        assertThatThrownBy(() -> paymentService.createInitialMembershipPayment(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("10.00"), PaymentCurrency.USD, new BigDecimal("90.0000"), null))
+                .isInstanceOf(ValidationException.class)
+                .extracting(ex -> ((ValidationException) ex).getError())
+                .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_USD_NOT_SUPPORTED);
+
+        verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void createInitialMembershipPayment_usesOriginalAmountNotNetForVkDonut() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+        when(projectMembershipRepository.save(any(ProjectMembership.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
+                .thenReturn(Optional.of(new ApplicationSettings(10)));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Payment payment = paymentService.createInitialMembershipPayment(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.VK_DONUT,
+                new BigDecimal("500.00"), PaymentCurrency.RUB, null, null);
+
+        assertThat(payment.getNetAmountRub()).isEqualByComparingTo("450.00");
+        verify(projectMembershipRepository).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void create_allowsPartialPaymentForExistingSubscriptionMember() {
+        activeMembership = TestEntities.membership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        stubActiveMembership();
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Payment payment = paymentService.create(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("150.00"), PaymentCurrency.RUB, null, null);
+
+        assertThat(payment.getAmountOriginal()).isEqualByComparingTo("150.00");
+        verify(paymentRepository).save(any(Payment.class));
     }
 
     private void stubDefaultSettings() {
