@@ -48,11 +48,17 @@
 
     <div class="mb-3" id="exchangeRateGroup">
         <label for="exchangeRate" class="form-label">Курс к рублю</label>
-        <input type="number" step="0.0001" min="0.0001" class="form-control" id="exchangeRate"
-               th:field="*{exchangeRate}"
-               th:classappend="${#fields.hasErrors('exchangeRate')} ? 'is-invalid'">
-        <div class="invalid-feedback" th:if="${#fields.hasErrors('exchangeRate')}"
+        <div class="input-group">
+            <input type="number" step="0.0001" min="0.0001" class="form-control" id="exchangeRate"
+                   th:field="*{exchangeRate}"
+                   th:classappend="${#fields.hasErrors('exchangeRate')} ? 'is-invalid'">
+            <button type="button" class="btn btn-outline-secondary" id="fetchExchangeRateBtn"
+                    style="display: none">Получить текущий курс</button>
+        </div>
+        <div class="invalid-feedback d-block" th:if="${#fields.hasErrors('exchangeRate')}"
              th:errors="*{exchangeRate}"></div>
+        <div class="text-danger small mt-1" id="exchangeRateFetchError" style="display: none"
+             role="alert">Не удалось получить курс. Укажите курс вручную.</div>
     </div>
 
     <div class="mb-4">
@@ -67,15 +73,62 @@
             var currencySelect = document.getElementById('currency');
             var exchangeRateGroup = document.getElementById('exchangeRateGroup');
             var exchangeRateInput = document.getElementById('exchangeRate');
+            var fetchExchangeRateBtn = document.getElementById('fetchExchangeRateBtn');
+            var exchangeRateFetchError = document.getElementById('exchangeRateFetchError');
+
+            function isForeignCurrency(currency) {
+                return currency === 'USD' || currency === 'EUR';
+            }
+
+            function hideFetchError() {
+                exchangeRateFetchError.style.display = 'none';
+            }
+
+            function showFetchError() {
+                exchangeRateFetchError.style.display = '';
+            }
 
             function updateExchangeRateVisibility() {
-                var isRub = currencySelect.value === 'RUB';
+                var currency = currencySelect.value;
+                var isRub = currency === 'RUB';
                 exchangeRateGroup.style.display = isRub ? 'none' : '';
-                exchangeRateInput.disabled = isRub;
+                fetchExchangeRateBtn.style.display = isForeignCurrency(currency) ? '' : 'none';
+                hideFetchError();
+
                 if (isRub) {
-                    exchangeRateInput.value = '';
+                    exchangeRateInput.value = '1';
                 }
             }
+
+            fetchExchangeRateBtn.addEventListener('click', function () {
+                var currency = currencySelect.value;
+                if (!isForeignCurrency(currency)) {
+                    return;
+                }
+
+                hideFetchError();
+                fetchExchangeRateBtn.disabled = true;
+
+                fetch('/exchange-rates?currency=' + encodeURIComponent(currency))
+                    .then(function (response) {
+                        if (!response.ok) {
+                            return response.json().then(function () {
+                                throw new Error('fetch failed');
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(function (data) {
+                        exchangeRateInput.value = data.rate;
+                        hideFetchError();
+                    })
+                    .catch(function () {
+                        showFetchError();
+                    })
+                    .finally(function () {
+                        fetchExchangeRateBtn.disabled = false;
+                    });
+            });
 
             currencySelect.addEventListener('change', updateExchangeRateVisibility);
             updateExchangeRateVisibility();

@@ -33,4 +33,10 @@ server:
 logging:
   level:
     root: INFO
+
+eliteseriespay:
+  exchange-rate:
+    api-url: https://api.frankfurter.app/latest
+    connect-timeout: 5s
+    read-timeout: 5s
     com.eliteseriespay: DEBUG

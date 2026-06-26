@@ -22,6 +22,7 @@ public enum ValidationError {
     PAYMENT_CURRENCY_REQUIRED("Выберите валюту"),
     EXCHANGE_RATE_REQUIRED("Укажите курс"),
     EXCHANGE_RATE_NOT_POSITIVE("Курс должен быть больше нуля"),
+    EXCHANGE_RATE_UNSUPPORTED_CURRENCY("Курс можно получить только для доллара или евро"),
     PAYMENT_VOIDED("Аннулированный платёж нельзя изменить"),
     PAYMENT_ALREADY_VOIDED("Платёж уже аннулирован"),
     INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT(
