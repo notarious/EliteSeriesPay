@@ -71,6 +71,11 @@ public class ProjectMembership {
         this.status = MembershipStatus.ACTIVE;
     }
 
+    public void restoreActive(BillingMode billingMode) {
+        this.status = MembershipStatus.ACTIVE;
+        this.billingMode = billingMode;
+    }
+
     public void markLeft() {
         this.status = MembershipStatus.LEFT;
     }

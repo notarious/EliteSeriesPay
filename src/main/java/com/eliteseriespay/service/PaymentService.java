@@ -1,6 +1,7 @@
 package com.eliteseriespay.service;
 
 import com.eliteseriespay.domain.Participant;
+import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Payment;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
@@ -150,6 +151,48 @@ public class PaymentService {
                 paymentDate, source, normalized.amountOriginal(), currency, normalized.exchangeRate());
         PaymentAmounts amounts = paymentCalculator.calculate(
                 source, normalized, applicationSettingsService.getVkDonutFeePercent());
+
+        Payment payment = new Payment(
+                participant,
+                project,
+                paymentDate,
+                source,
+                amounts.amountOriginal(),
+                currency,
+                amounts.exchangeRate(),
+                amounts.amountRub(),
+                amounts.feePercent(),
+                amounts.netAmountRub(),
+                normalizedComment);
+
+        Payment saved = paymentRepository.save(payment);
+        membershipBillingService.recalculateBilling(projectId, participantId);
+        return saved;
+    }
+
+    @Transactional
+    public Payment createInitialMembershipPayment(Long participantId,
+                                                  Long projectId,
+                                                  LocalDate paymentDate,
+                                                  PaymentSource source,
+                                                  BigDecimal amountOriginal,
+                                                  PaymentCurrency currency,
+                                                  BigDecimal exchangeRate,
+                                                  String comment) {
+        participantService.findById(participantId);
+        projectService.findById(projectId);
+
+        String normalizedComment = Texts.trimToNull(comment);
+        NormalizedAmounts normalized = paymentCalculator.normalize(amountOriginal, currency, exchangeRate);
+        PaymentValidator.validate(
+                paymentDate, source, normalized.amountOriginal(), currency, normalized.exchangeRate());
+        PaymentAmounts amounts = paymentCalculator.calculate(
+                source, normalized, applicationSettingsService.getVkDonutFeePercent());
+
+        projectMembershipService.completeSubscriptionAdd(projectId, participantId);
+
+        Participant participant = participantService.findById(participantId);
+        Project project = projectService.findById(projectId);
 
         Payment payment = new Payment(
                 participant,

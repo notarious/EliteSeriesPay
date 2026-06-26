@@ -4,12 +4,13 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.service.MembershipAddResult;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.FormErrorMapper;
 import com.eliteseriespay.web.form.ExistingParticipantForm;
 import com.eliteseriespay.web.form.ParticipantEditForm;
-import com.eliteseriespay.web.form.ParticipantForm;
+import com.eliteseriespay.web.form.ProjectNewParticipantForm;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequestMapping("/projects/{projectId}/participants")
@@ -55,23 +57,23 @@ public class ProjectParticipantController {
         }
 
         try {
-            projectMembershipService.addParticipantToProject(
+            MembershipAddResult result = projectMembershipService.addParticipantToProject(
                     projectId,
                     existingParticipantForm.getParticipantId(),
                     existingParticipantForm.getBillingMode());
+            return resolveAddResultRedirect(projectId, result);
         } catch (ValidationException ex) {
             formErrorMapper.rejectExistingParticipantForm(bindingResult, ex);
             populateNewFormModel(model, projectId, "existing");
             model.addAttribute("billingModes", BillingMode.values());
             return "projects/participants/new";
         }
-
-        return "redirect:/projects/" + projectId;
     }
 
     @PostMapping
     public String create(@PathVariable Long projectId,
-                         @Valid @ModelAttribute("participantForm") ParticipantForm participantForm,
+                         @Valid @ModelAttribute("projectNewParticipantForm")
+                         ProjectNewParticipantForm projectNewParticipantForm,
                          BindingResult bindingResult,
                          Model model) {
         if (bindingResult.hasErrors()) {
@@ -82,12 +84,13 @@ public class ProjectParticipantController {
         }
 
         try {
-            projectMembershipService.addToProject(
+            MembershipAddResult result = projectMembershipService.addToProject(
                     projectId,
-                    participantForm.getVkId(),
-                    participantForm.getName(),
-                    participantForm.getComment(),
-                    participantForm.getBillingMode());
+                    projectNewParticipantForm.getVkId(),
+                    projectNewParticipantForm.getName(),
+                    projectNewParticipantForm.getComment(),
+                    projectNewParticipantForm.getBillingMode());
+            return resolveAddResultRedirect(projectId, result);
         } catch (ValidationException ex) {
             formErrorMapper.rejectProjectParticipantForm(bindingResult, ex);
             model.addAttribute("projectId", projectId);
@@ -95,8 +98,6 @@ public class ProjectParticipantController {
             model.addAttribute("billingModes", BillingMode.values());
             return "projects/participants/new";
         }
-
-        return "redirect:/projects/" + projectId;
     }
 
     @GetMapping("/{participantId}/edit")
@@ -169,6 +170,21 @@ public class ProjectParticipantController {
         throw ex;
     }
 
+    private String resolveAddResultRedirect(Long projectId, MembershipAddResult result) {
+        if (result.requiresInitialPayment()) {
+            String returnTo = "/projects/" + projectId;
+            String redirectUrl = UriComponentsBuilder
+                    .fromPath("/participants/" + result.participantId() + "/payments/new")
+                    .queryParam("initialMembership", true)
+                    .queryParam("projectId", projectId)
+                    .queryParam("returnTo", returnTo)
+                    .build()
+                    .toUriString();
+            return "redirect:" + redirectUrl;
+        }
+        return "redirect:/projects/" + projectId;
+    }
+
     private void populateEditModel(Model model, Long projectId, Long participantId) {
         projectMembershipService.findActiveParticipant(projectId, participantId);
         model.addAttribute("projectId", projectId);
@@ -179,10 +195,10 @@ public class ProjectParticipantController {
         var availableParticipants = projectMembershipService.findParticipantsAvailableForProject(projectId);
         model.addAttribute("availableParticipants", availableParticipants);
         model.addAttribute("billingModes", BillingMode.values());
-        if (!model.containsAttribute("participantForm")) {
-            ParticipantForm participantForm = new ParticipantForm();
-            participantForm.setBillingMode(BillingMode.SUBSCRIPTION);
-            model.addAttribute("participantForm", participantForm);
+        if (!model.containsAttribute("projectNewParticipantForm")) {
+            ProjectNewParticipantForm projectNewParticipantForm = new ProjectNewParticipantForm();
+            projectNewParticipantForm.setBillingMode(BillingMode.SUBSCRIPTION);
+            model.addAttribute("projectNewParticipantForm", projectNewParticipantForm);
         }
         if (!model.containsAttribute("existingParticipantForm")) {
             ExistingParticipantForm existingParticipantForm = new ExistingParticipantForm();

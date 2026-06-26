@@ -57,6 +57,10 @@ public class MembershipBillingCalculator {
         }
     }
 
+    public boolean hasActivePaidUntilMonth(YearMonth paidUntilMonth, YearMonth currentMonth) {
+        return paidUntilMonth != null && paidUntilMonth.compareTo(currentMonth) >= 0;
+    }
+
     public SubscriptionPaymentStatus resolveSubscriptionStatus(YearMonth paidUntilMonth, YearMonth currentMonth) {
         if (paidUntilMonth == null) {
             return SubscriptionPaymentStatus.NO_PAYMENTS;
@@ -88,16 +92,18 @@ public class MembershipBillingCalculator {
         return filter == BillingModeFilter.ALL || filter.mode() == membershipMode;
     }
 
-    public boolean matchesPaymentStatus(BillingMode membershipMode,
-                                      SubscriptionPaymentStatus status,
-                                      SubscriptionPaymentStatusFilter filter) {
-        if (filter == SubscriptionPaymentStatusFilter.ALL) {
-            return true;
-        }
-        if (membershipMode == BillingMode.PACKAGE) {
-            return false;
-        }
-        return status != null && filter.status() == status;
+    public boolean matchesMembershipPaymentStatusFilter(BillingMode membershipMode,
+                                                        SubscriptionPaymentStatus status,
+                                                        MembershipPaymentStatusFilter filter) {
+        return switch (filter) {
+            case ALL -> true;
+            case PACKAGE -> membershipMode == BillingMode.PACKAGE;
+            case ACTIVE -> membershipMode == BillingMode.SUBSCRIPTION
+                    && status == SubscriptionPaymentStatus.ACTIVE;
+            case OVERDUE -> membershipMode == BillingMode.SUBSCRIPTION
+                    && (status == SubscriptionPaymentStatus.OVERDUE
+                    || status == SubscriptionPaymentStatus.NO_PAYMENTS);
+        };
     }
 
     private SubscriptionAmount resolveSubscriptionAmount(Project project, Payment payment) {

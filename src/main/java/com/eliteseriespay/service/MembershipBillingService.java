@@ -55,18 +55,29 @@ public class MembershipBillingService {
     public List<ProjectParticipantBillingView> buildProjectParticipantViews(
             List<ProjectMembership> memberships,
             BillingModeFilter billingModeFilter,
-            SubscriptionPaymentStatusFilter paymentStatusFilter,
+            MembershipPaymentStatusFilter paymentStatusFilter,
             YearMonth currentMonth) {
 
         return memberships.stream()
                 .filter(membership -> membershipBillingCalculator.matchesBillingMode(
                         membership.getBillingMode(), billingModeFilter))
-                .map(membership -> toBillingView(membership, currentMonth))
-                .filter(view -> matchesPaymentStatusFilter(view, paymentStatusFilter))
+                .map(membership -> toProjectBillingView(membership, currentMonth))
+                .filter(view -> membershipBillingCalculator.matchesMembershipPaymentStatusFilter(
+                        view.billingMode(), view.subscriptionPaymentStatus(), paymentStatusFilter))
                 .toList();
     }
 
-    private ProjectParticipantBillingView toBillingView(ProjectMembership membership, YearMonth currentMonth) {
+    @Transactional(readOnly = true)
+    public List<ParticipantMembershipBillingView> buildParticipantMembershipViews(
+            List<ProjectMembership> memberships,
+            YearMonth currentMonth) {
+        return memberships.stream()
+                .map(membership -> toParticipantBillingView(membership, currentMonth))
+                .toList();
+    }
+
+    private ProjectParticipantBillingView toProjectBillingView(ProjectMembership membership,
+                                                                 YearMonth currentMonth) {
         if (membership.getBillingMode() == BillingMode.PACKAGE) {
             return ProjectParticipantBillingView.forPackage(membership.getParticipant());
         }
@@ -85,12 +96,23 @@ public class MembershipBillingService {
                 partialPaymentInfo.orElse(null));
     }
 
-    private boolean matchesPaymentStatusFilter(ProjectParticipantBillingView view,
-                                               SubscriptionPaymentStatusFilter filter) {
-        if (filter.isAll()) {
-            return true;
+    private ParticipantMembershipBillingView toParticipantBillingView(ProjectMembership membership,
+                                                                        YearMonth currentMonth) {
+        if (membership.getBillingMode() == BillingMode.PACKAGE) {
+            return ParticipantMembershipBillingView.forPackage(membership.getProject());
         }
-        return membershipBillingCalculator.matchesPaymentStatus(
-                view.billingMode(), view.subscriptionPaymentStatus(), filter);
+
+        SubscriptionPaymentStatus status = membershipBillingCalculator.resolveSubscriptionStatus(
+                membership.getPaidUntilMonth(), currentMonth);
+        Optional<PartialPaymentInfo> partialPaymentInfo = membershipBillingCalculator.resolvePartialPaymentInfo(
+                membership.getProject(),
+                membership.getPartialPaymentAmount(),
+                membership.getPartialPaymentCurrency());
+
+        return ParticipantMembershipBillingView.forSubscription(
+                membership.getProject(),
+                membership.getPaidUntilMonth(),
+                status,
+                partialPaymentInfo.orElse(null));
     }
 }

@@ -8,6 +8,7 @@ import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.repository.ProjectMembershipRepository;
 import com.eliteseriespay.validation.ValidationError;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -22,13 +23,16 @@ public class ProjectMembershipService {
     private final ProjectService projectService;
     private final ParticipantService participantService;
     private final ProjectMembershipRepository projectMembershipRepository;
+    private final MembershipBillingCalculator membershipBillingCalculator;
 
     public ProjectMembershipService(ProjectService projectService,
                                     ParticipantService participantService,
-                                    ProjectMembershipRepository projectMembershipRepository) {
+                                    ProjectMembershipRepository projectMembershipRepository,
+                                    MembershipBillingCalculator membershipBillingCalculator) {
         this.projectService = projectService;
         this.participantService = participantService;
         this.projectMembershipRepository = projectMembershipRepository;
+        this.membershipBillingCalculator = membershipBillingCalculator;
     }
 
     @Transactional(readOnly = true)
@@ -78,17 +82,47 @@ public class ProjectMembershipService {
     }
 
     @Transactional
-    public ProjectMembership addToProject(Long projectId, String vkId, String name, String comment, BillingMode billingMode) {
+    public MembershipAddResult addToProject(Long projectId,
+                                            String vkId,
+                                            String name,
+                                            String comment,
+                                            BillingMode billingMode) {
         Project project = projectService.findById(projectId);
         Participant participant = participantService.findOrCreate(vkId, name, comment);
-        return activateOrCreateMembership(project, participant, billingMode);
+        return resolveMembershipAdd(project, participant, billingMode);
     }
 
     @Transactional
-    public ProjectMembership addParticipantToProject(Long projectId, Long participantId, BillingMode billingMode) {
+    public MembershipAddResult addParticipantToProject(Long projectId,
+                                                       Long participantId,
+                                                       BillingMode billingMode) {
         Project project = projectService.findById(projectId);
         Participant participant = participantService.findById(participantId);
-        return activateOrCreateMembership(project, participant, billingMode);
+        return resolveMembershipAdd(project, participant, billingMode);
+    }
+
+    @Transactional
+    public ProjectMembership completeSubscriptionAdd(Long projectId, Long participantId) {
+        validateBillingMode(BillingMode.SUBSCRIPTION);
+
+        Project project = projectService.findById(projectId);
+        Participant participant = participantService.findById(participantId);
+
+        Optional<ProjectMembership> existingMembership = projectMembershipRepository
+                .findByProject_IdAndParticipant_Id(project.getId(), participant.getId());
+
+        if (existingMembership.isPresent()) {
+            ProjectMembership membership = existingMembership.get();
+            if (membership.getStatus() == MembershipStatus.ACTIVE) {
+                throw new ValidationException(ValidationError.PARTICIPANT_ALREADY_ACTIVE);
+            }
+            membership.restoreActive(BillingMode.SUBSCRIPTION);
+            return membership;
+        }
+
+        ProjectMembership membership = new ProjectMembership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        return projectMembershipRepository.save(membership);
     }
 
     @Transactional(readOnly = true)
@@ -136,9 +170,9 @@ public class ProjectMembershipService {
         membership.markLeft();
     }
 
-    private ProjectMembership activateOrCreateMembership(Project project,
-                                                         Participant participant,
-                                                         BillingMode billingMode) {
+    private MembershipAddResult resolveMembershipAdd(Project project,
+                                                     Participant participant,
+                                                     BillingMode billingMode) {
         validateBillingMode(billingMode);
 
         Optional<ProjectMembership> existingMembership = projectMembershipRepository
@@ -149,13 +183,29 @@ public class ProjectMembershipService {
             if (membership.getStatus() == MembershipStatus.ACTIVE) {
                 throw new ValidationException(ValidationError.PARTICIPANT_ALREADY_ACTIVE);
             }
-            membership.markActive();
-            return membership;
+            if (billingMode == BillingMode.PACKAGE) {
+                membership.restoreActive(billingMode);
+                return MembershipAddResult.added(membership);
+            }
+            if (hasActiveSubscription(membership)) {
+                membership.restoreActive(billingMode);
+                return MembershipAddResult.added(membership);
+            }
+            return MembershipAddResult.requiresInitialPayment(participant.getId());
         }
 
-        ProjectMembership membership = new ProjectMembership(
-                project, participant, MembershipStatus.ACTIVE, billingMode);
-        return projectMembershipRepository.save(membership);
+        if (billingMode == BillingMode.PACKAGE) {
+            ProjectMembership membership = new ProjectMembership(
+                    project, participant, MembershipStatus.ACTIVE, billingMode);
+            return MembershipAddResult.added(projectMembershipRepository.save(membership));
+        }
+
+        return MembershipAddResult.requiresInitialPayment(participant.getId());
+    }
+
+    private boolean hasActiveSubscription(ProjectMembership membership) {
+        return membershipBillingCalculator.hasActivePaidUntilMonth(
+                membership.getPaidUntilMonth(), YearMonth.now());
     }
 
     private void validateBillingMode(BillingMode billingMode) {

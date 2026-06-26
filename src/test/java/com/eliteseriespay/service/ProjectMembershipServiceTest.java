@@ -20,6 +20,7 @@ import com.eliteseriespay.repository.ProjectRepository;
 import com.eliteseriespay.support.TestEntities;
 import com.eliteseriespay.validation.ValidationError;
 import java.math.BigDecimal;
+import java.time.YearMonth;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -50,12 +51,34 @@ class ProjectMembershipServiceTest {
     void setUp() {
         ProjectService projectService = new ProjectService(projectRepository);
         ParticipantService participantService = new ParticipantService(participantRepository);
+        MembershipBillingCalculator membershipBillingCalculator = new MembershipBillingCalculator();
         projectMembershipService = new ProjectMembershipService(
-                projectService, participantService, projectMembershipRepository);
+                projectService, participantService, projectMembershipRepository, membershipBillingCalculator);
     }
 
     @Test
-    void addToProject_createsParticipantAndMembership() {
+    void addToProject_createsParticipantAndRequiresInitialPaymentForSubscription() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.empty());
+        when(participantRepository.save(any(Participant.class))).thenAnswer(invocation -> {
+            Participant saved = invocation.getArgument(0);
+            TestEntities.setId(saved, PARTICIPANT_ID);
+            return saved;
+        });
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+
+        MembershipAddResult result = projectMembershipService.addToProject(
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
+
+        assertThat(result.requiresInitialPayment()).isTrue();
+        assertThat(result.participantId()).isEqualTo(PARTICIPANT_ID);
+        verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void addToProject_packageCreatesMembershipDirectly() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
         when(participantRepository.findByVkId("12345")).thenReturn(Optional.empty());
@@ -69,19 +92,17 @@ class ProjectMembershipServiceTest {
         when(projectMembershipRepository.save(any(ProjectMembership.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectMembership membership = projectMembershipService.addToProject(
-                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
+        MembershipAddResult result = projectMembershipService.addToProject(
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.PACKAGE);
 
-        assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
-        assertThat(membership.getProject()).isEqualTo(project);
-        assertThat(membership.getParticipant().getId()).isEqualTo(PARTICIPANT_ID);
-        assertThat(membership.getParticipant().getVkId()).isEqualTo("12345");
-        assertThat(membership.getParticipant().getName()).isEqualTo("Ivan");
+        assertThat(result.requiresInitialPayment()).isFalse();
+        assertThat(result.membership().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        assertThat(result.membership().getBillingMode()).isEqualTo(BillingMode.PACKAGE);
         verify(projectMembershipRepository).save(any(ProjectMembership.class));
     }
 
     @Test
-    void addToProject_reusesExistingParticipant() {
+    void addToProject_reusesExistingParticipant_package() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
         when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
@@ -91,16 +112,54 @@ class ProjectMembershipServiceTest {
         when(projectMembershipRepository.save(any(ProjectMembership.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectMembership membership = projectMembershipService.addToProject(
-                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
+        MembershipAddResult result = projectMembershipService.addToProject(
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.PACKAGE);
 
-        assertThat(membership.getParticipant()).isEqualTo(participant);
+        assertThat(result.membership().getParticipant()).isEqualTo(participant);
         verify(participantRepository, never()).save(any(Participant.class));
         verify(projectMembershipRepository).save(any(ProjectMembership.class));
     }
 
     @Test
-    void addToProject_reactivatesLeftMembership() {
+    void addToProject_reactivatesLeftMembershipWithActivePaidUntilMonth() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
+        ProjectMembership existing = TestEntities.membership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
+        existing.updateBilling(YearMonth.now().plusMonths(1), null, null);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.of(participant));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.of(existing));
+
+        MembershipAddResult result = projectMembershipService.addToProject(
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
+
+        assertThat(result.requiresInitialPayment()).isFalse();
+        assertThat(result.membership()).isSameAs(existing);
+        assertThat(result.membership().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void addToProject_expiredSubscriptionRequiresInitialPayment() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
+        ProjectMembership existing = TestEntities.membership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
+        existing.updateBilling(YearMonth.now().minusMonths(1), null, null);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findByVkId("12345")).thenReturn(Optional.of(participant));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.of(existing));
+
+        MembershipAddResult result = projectMembershipService.addToProject(
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
+
+        assertThat(result.requiresInitialPayment()).isTrue();
+        assertThat(existing.getStatus()).isEqualTo(MembershipStatus.LEFT);
+    }
+
+    @Test
+    void addToProject_reactivatesLeftMembership_package() {
         Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
         Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
         ProjectMembership existing = new ProjectMembership(project, participant, MembershipStatus.LEFT, BillingMode.SUBSCRIPTION);
@@ -109,11 +168,12 @@ class ProjectMembershipServiceTest {
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(existing));
 
-        ProjectMembership membership = projectMembershipService.addToProject(
-                PROJECT_ID, "12345", "Ivan", null, BillingMode.SUBSCRIPTION);
+        MembershipAddResult result = projectMembershipService.addToProject(
+                PROJECT_ID, "12345", "Ivan", null, BillingMode.PACKAGE);
 
-        assertThat(membership).isSameAs(existing);
-        assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        assertThat(result.membership()).isSameAs(existing);
+        assertThat(result.membership().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        assertThat(result.membership().getBillingMode()).isEqualTo(BillingMode.PACKAGE);
         verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
     }
 
@@ -338,12 +398,47 @@ class ProjectMembershipServiceTest {
         when(projectMembershipRepository.save(any(ProjectMembership.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ProjectMembership membership = projectMembershipService.addParticipantToProject(
+        MembershipAddResult result = projectMembershipService.addParticipantToProject(
                 PROJECT_ID, PARTICIPANT_ID, BillingMode.PACKAGE);
 
+        assertThat(result.requiresInitialPayment()).isFalse();
+        assertThat(result.membership().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        assertThat(result.membership().getProject()).isEqualTo(project);
+        assertThat(result.membership().getParticipant()).isEqualTo(participant);
+        verify(projectMembershipRepository).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void addParticipantToProject_subscriptionRequiresInitialPayment() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+
+        MembershipAddResult result = projectMembershipService.addParticipantToProject(
+                PROJECT_ID, PARTICIPANT_ID, BillingMode.SUBSCRIPTION);
+
+        assertThat(result.requiresInitialPayment()).isTrue();
+        verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
+    }
+
+    @Test
+    void completeSubscriptionAdd_createsMembership() {
+        Project project = TestEntities.project(PROJECT_ID, "Series", new BigDecimal("1000.00"));
+        Participant participant = TestEntities.participant(PARTICIPANT_ID, "12345", "Ivan", null);
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+        when(projectMembershipRepository.save(any(ProjectMembership.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        ProjectMembership membership = projectMembershipService.completeSubscriptionAdd(PROJECT_ID, PARTICIPANT_ID);
+
         assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
-        assertThat(membership.getProject()).isEqualTo(project);
-        assertThat(membership.getParticipant()).isEqualTo(participant);
+        assertThat(membership.getBillingMode()).isEqualTo(BillingMode.SUBSCRIPTION);
         verify(projectMembershipRepository).save(any(ProjectMembership.class));
     }
 
@@ -357,11 +452,12 @@ class ProjectMembershipServiceTest {
         when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
                 .thenReturn(Optional.of(existing));
 
-        ProjectMembership membership = projectMembershipService.addParticipantToProject(
+        MembershipAddResult result = projectMembershipService.addParticipantToProject(
                 PROJECT_ID, PARTICIPANT_ID, BillingMode.PACKAGE);
 
-        assertThat(membership).isSameAs(existing);
-        assertThat(membership.getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        assertThat(result.membership()).isSameAs(existing);
+        assertThat(result.membership().getStatus()).isEqualTo(MembershipStatus.ACTIVE);
+        assertThat(result.membership().getBillingMode()).isEqualTo(BillingMode.PACKAGE);
         verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
     }
 

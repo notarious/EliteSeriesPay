@@ -129,9 +129,18 @@ class MembershipBillingCalculatorTest {
 
         assertThat(view.paymentStatusLabel()).isEqualTo("Пакет");
         assertThat(view.subscriptionPaymentStatus()).isNull();
-        assertThat(calculator.matchesPaymentStatus(
-                BillingMode.PACKAGE, null, SubscriptionPaymentStatusFilter.of(SubscriptionPaymentStatus.OVERDUE)))
+        assertThat(calculator.matchesMembershipPaymentStatusFilter(
+                BillingMode.PACKAGE, null, MembershipPaymentStatusFilter.OVERDUE))
                 .isFalse();
+        assertThat(calculator.matchesMembershipPaymentStatusFilter(
+                BillingMode.PACKAGE, null, MembershipPaymentStatusFilter.PACKAGE))
+                .isTrue();
+    }
+
+    @Test
+    void nullPaidUntilMonth_isDisplayedAsOverdue() {
+        assertThat(ProjectParticipantBillingView.subscriptionStatusLabel(SubscriptionPaymentStatus.NO_PAYMENTS))
+                .isEqualTo("Просрочен");
     }
 
     @Test

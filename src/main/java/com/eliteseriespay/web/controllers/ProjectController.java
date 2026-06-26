@@ -1,15 +1,15 @@
 package com.eliteseriespay.web.controllers;
 
 import com.eliteseriespay.domain.BillingMode;
+import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Project;
-import com.eliteseriespay.domain.SubscriptionPaymentStatus;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.service.BillingModeFilter;
 import com.eliteseriespay.service.MembershipBillingService;
+import com.eliteseriespay.service.MembershipPaymentStatusFilter;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
-import com.eliteseriespay.service.SubscriptionPaymentStatusFilter;
 import com.eliteseriespay.web.FormErrorMapper;
 import com.eliteseriespay.web.form.ProjectForm;
 import jakarta.validation.Valid;
@@ -79,14 +79,14 @@ public class ProjectController {
     @GetMapping("/{id}")
     public String show(@PathVariable Long id,
                        @RequestParam(required = false) BillingMode billingMode,
-                       @RequestParam(required = false) SubscriptionPaymentStatus paymentStatus,
+                       @RequestParam(required = false) MembershipPaymentStatusFilter paymentStatus,
                        Model model) {
         Project project = projectService.findById(id);
         var memberships = projectMembershipService.findActiveByProjectId(id);
         var participants = membershipBillingService.buildProjectParticipantViews(
                 memberships,
                 BillingModeFilter.of(billingMode),
-                SubscriptionPaymentStatusFilter.of(paymentStatus),
+                paymentStatus != null ? paymentStatus : MembershipPaymentStatusFilter.ALL,
                 YearMonth.now());
 
         model.addAttribute("project", project);
@@ -94,7 +94,7 @@ public class ProjectController {
         model.addAttribute("selectedBillingMode", billingMode);
         model.addAttribute("selectedPaymentStatus", paymentStatus);
         model.addAttribute("billingModes", BillingMode.values());
-        model.addAttribute("paymentStatuses", SubscriptionPaymentStatus.values());
+        model.addAttribute("paymentStatusFilters", MembershipPaymentStatusFilter.values());
         return "projects/show";
     }
 

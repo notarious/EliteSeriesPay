@@ -44,17 +44,18 @@
                 <option th:each="mode : ${billingModes}"
                         th:value="${mode.name()}"
                         th:selected="${selectedBillingMode == mode}"
-                        th:text="${mode.name() == 'SUBSCRIPTION' ? 'Абонемент' : 'Пакет'}">Абонемент</option>
+                        th:text="${mode.displayName}">Абонемент</option>
             </select>
         </div>
         <div class="col-md-3">
             <label for="paymentStatus" class="form-label">Статус оплаты</label>
             <select class="form-select form-select-sm" id="paymentStatus" name="paymentStatus">
                 <option value="" th:selected="${selectedPaymentStatus == null}">Все</option>
-                <option th:each="status : ${paymentStatuses}"
-                        th:value="${status.name()}"
-                        th:selected="${selectedPaymentStatus == status}"
-                        th:text="${status.name() == 'NO_PAYMENTS' ? 'Нет оплат' : (status.name() == 'ACTIVE' ? 'Активные' : 'Просроченные')}">
+                <option th:each="filter : ${paymentStatusFilters}"
+                        th:if="${filter.name() != 'ALL'}"
+                        th:value="${filter.name()}"
+                        th:selected="${selectedPaymentStatus == filter}"
+                        th:text="${filter.displayName}">
                     Активные
                 </option>
             </select>
@@ -69,7 +70,7 @@
     </div>
 
     <div th:unless="${#lists.isEmpty(participants)}" class="table-responsive">
-        <table class="table table-striped align-middle">
+        <table class="table table-sm table-striped align-middle">
             <thead>
             <tr>
                 <th scope="col">Имя</th>
@@ -90,10 +91,9 @@
                 <td>
                     <span th:if="${row.paidUntilMonth != null}"
                           th:text="${#temporals.format(row.paidUntilMonth.atDay(1), 'MM.yyyy')}">06.2026</span>
-                    <span th:if="${row.paidUntilMonth == null}">—</span>
                 </td>
                 <td>
-                    <span th:classappend="${row.paymentStatusLabel == 'Активен'} ? 'text-success' : (${row.paymentStatusLabel == 'Просрочен'} ? 'text-danger' : '')"
+                    <span th:classappend="${row.statusCssClass}"
                           th:text="${row.paymentStatusLabel}">Активен</span>
                 </td>
                 <td>
@@ -103,19 +103,32 @@
                         <span class="text-muted">· До продления:</span>
                         <span th:text="${#numbers.formatDecimal(partial.remainingUntilRenewal, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
                     </span>
-                    <span th:if="${row.partialPaymentInfo == null}">—</span>
                 </td>
                 <td class="text-end">
                     <div class="d-inline-flex gap-1">
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:href="@{/participants/{id}(id=${row.participant.id})}"
+                           data-bs-toggle="tooltip" data-bs-title="Просмотр"
+                           aria-label="Просмотр">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </a>
                         <a class="btn btn-sm btn-outline-primary"
                            th:href="@{/projects/{projectId}/participants/{participantId}/edit(projectId=${project.id}, participantId=${row.participant.id})}"
-                           title="Изменить" aria-label="Изменить">
+                           data-bs-toggle="tooltip" data-bs-title="Изменить"
+                           aria-label="Изменить">
                             <i class="bi bi-pencil" aria-hidden="true"></i>
+                        </a>
+                        <a class="btn btn-sm btn-outline-success"
+                           th:href="@{/participants/{participantId}/payments/new(participantId=${row.participant.id}, projectId=${project.id})}"
+                           data-bs-toggle="tooltip" data-bs-title="Оплата"
+                           aria-label="Оплата">
+                            <i class="bi bi-cash-coin" aria-hidden="true"></i>
                         </a>
                         <form th:action="@{/projects/{projectId}/participants/{participantId}/remove(projectId=${project.id}, participantId=${row.participant.id})}"
                               method="post" class="d-inline">
                             <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    title="Исключить" aria-label="Исключить"
+                                    data-bs-toggle="tooltip" data-bs-title="Исключить из проекта"
+                                    aria-label="Исключить из проекта"
                                     onclick="return confirm('Исключить участника из проекта?');">
                                 <i class="bi bi-person-dash" aria-hidden="true"></i>
                             </button>

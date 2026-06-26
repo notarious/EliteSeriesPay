@@ -80,7 +80,7 @@ class PaymentServiceTest {
         ProjectService projectService = new ProjectService(projectRepository);
         ParticipantService participantService = new ParticipantService(participantRepository);
         ProjectMembershipService projectMembershipService = new ProjectMembershipService(
-                projectService, participantService, projectMembershipRepository);
+                projectService, participantService, projectMembershipRepository, new MembershipBillingCalculator());
         ApplicationSettingsService applicationSettingsService =
                 new ApplicationSettingsService(applicationSettingsRepository);
         membershipBillingService = new MembershipBillingService(
@@ -603,6 +603,26 @@ class PaymentServiceTest {
 
         assertThat(defaults.projectId()).isNull();
         assertThat(defaults.amountOriginal()).isNull();
+    }
+
+    @Test
+    void createInitialMembershipPayment_createsMembershipAndPayment() {
+        when(participantRepository.findById(PARTICIPANT_ID)).thenReturn(Optional.of(participant));
+        when(projectRepository.findById(PROJECT_ID)).thenReturn(Optional.of(project));
+        when(projectMembershipRepository.findByProject_IdAndParticipant_Id(PROJECT_ID, PARTICIPANT_ID))
+                .thenReturn(Optional.empty());
+        when(projectMembershipRepository.save(any(ProjectMembership.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        when(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
+                .thenReturn(Optional.of(new ApplicationSettings(10)));
+        when(paymentRepository.save(any(Payment.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Payment payment = paymentService.createInitialMembershipPayment(
+                PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
+                new BigDecimal("500.00"), PaymentCurrency.RUB, null, null);
+
+        assertThat(payment.getAmountOriginal()).isEqualByComparingTo("500.00");
+        verify(projectMembershipRepository).save(any(ProjectMembership.class));
     }
 
     private void stubDefaultSettings() {

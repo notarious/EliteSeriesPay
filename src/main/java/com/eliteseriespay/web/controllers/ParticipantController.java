@@ -4,6 +4,8 @@ import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.service.MembershipAddResult;
+import com.eliteseriespay.service.MembershipBillingService;
 import com.eliteseriespay.service.ParticipantService;
 import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
@@ -13,6 +15,7 @@ import com.eliteseriespay.web.form.AddParticipantToProjectForm;
 import com.eliteseriespay.web.form.ParticipantEditForm;
 import com.eliteseriespay.web.form.ParticipantForm;
 import jakarta.validation.Valid;
+import java.time.YearMonth;
 import java.util.Map;
 import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
@@ -25,6 +28,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
 @RequestMapping("/participants")
@@ -33,15 +37,18 @@ public class ParticipantController {
     private final ParticipantService participantService;
     private final ProjectMembershipService projectMembershipService;
     private final PaymentService paymentService;
+    private final MembershipBillingService membershipBillingService;
     private final FormErrorMapper formErrorMapper;
 
     public ParticipantController(ParticipantService participantService,
                                  ProjectMembershipService projectMembershipService,
                                  PaymentService paymentService,
+                                 MembershipBillingService membershipBillingService,
                                  FormErrorMapper formErrorMapper) {
         this.participantService = participantService;
         this.projectMembershipService = projectMembershipService;
         this.paymentService = paymentService;
+        this.membershipBillingService = membershipBillingService;
         this.formErrorMapper = formErrorMapper;
     }
 
@@ -92,9 +99,13 @@ public class ParticipantController {
     @GetMapping("/{id}")
     public String show(@PathVariable Long id, Model model) {
         Participant participant = participantService.findById(id);
+        var activeMemberships = projectMembershipService.findActiveByParticipantId(id);
+        var membershipBillingViews = membershipBillingService.buildParticipantMembershipViews(
+                activeMemberships, YearMonth.now());
 
         model.addAttribute("participant", participant);
-        model.addAttribute("activeMemberships", projectMembershipService.findActiveByParticipantId(id));
+        model.addAttribute("activeMemberships", activeMemberships);
+        model.addAttribute("membershipBillingViews", membershipBillingViews);
         model.addAttribute("leftMemberships", projectMembershipService.findLeftByParticipantId(id));
         model.addAttribute("paymentSummary", paymentService.getParticipantPaymentSummary(id));
         return "participants/show";
@@ -128,10 +139,11 @@ public class ParticipantController {
         }
 
         try {
-            projectMembershipService.addParticipantToProject(
+            MembershipAddResult result = projectMembershipService.addParticipantToProject(
                     addParticipantToProjectForm.getProjectId(),
                     participantId,
                     addParticipantToProjectForm.getBillingMode());
+            return resolveAddResultRedirect(addParticipantToProjectForm.getProjectId(), participantId, result);
         } catch (ValidationException ex) {
             formErrorMapper.rejectAddToProjectForm(bindingResult, ex);
             model.addAttribute("participantId", participantId);
@@ -140,7 +152,20 @@ public class ParticipantController {
             model.addAttribute("billingModes", BillingMode.values());
             return "participants/add-to-project";
         }
+    }
 
+    private String resolveAddResultRedirect(Long projectId, Long participantId, MembershipAddResult result) {
+        if (result.requiresInitialPayment()) {
+            String returnTo = "/participants/" + participantId;
+            String redirectUrl = UriComponentsBuilder
+                    .fromPath("/participants/" + participantId + "/payments/new")
+                    .queryParam("initialMembership", true)
+                    .queryParam("projectId", projectId)
+                    .queryParam("returnTo", returnTo)
+                    .build()
+                    .toUriString();
+            return "redirect:" + redirectUrl;
+        }
         return "redirect:/participants/" + participantId;
     }
 

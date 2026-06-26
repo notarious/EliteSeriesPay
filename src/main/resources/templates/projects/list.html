@@ -21,6 +21,7 @@
             <tr>
                 <th scope="col">Название</th>
                 <th scope="col" class="text-end">Стоимость эпизода (₽)</th>
+                <th scope="col" class="text-end">Абонемент</th>
                 <th scope="col" class="text-end">Действия</th>
             </tr>
             </thead>
@@ -34,15 +35,22 @@
                     1,000.00 ₽
                 </td>
                 <td class="text-end">
+                    <span th:text="${#numbers.formatDecimal(project.monthlyFeeRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">500.00 ₽</span>
+                    /
+                    <span th:text="${#numbers.formatDecimal(project.monthlyFeeEur, 1, 'COMMA', 2, 'POINT')} + ' €'">5.00 €</span>
+                </td>
+                <td class="text-end">
                     <div class="d-inline-flex gap-1">
                         <a class="btn btn-sm btn-outline-secondary"
                            th:href="@{/projects/{id}(id=${project.id})}"
-                           title="Открыть" aria-label="Открыть">
+                           data-bs-toggle="tooltip" data-bs-title="Просмотр"
+                           aria-label="Просмотр">
                             <i class="bi bi-eye" aria-hidden="true"></i>
                         </a>
                         <a class="btn btn-sm btn-outline-primary"
                            th:href="@{/projects/{id}/edit(id=${project.id})}"
-                           title="Изменить" aria-label="Изменить">
+                           data-bs-toggle="tooltip" data-bs-title="Изменить"
+                           aria-label="Изменить">
                             <i class="bi bi-pencil" aria-hidden="true"></i>
                         </a>
                     </div>

@@ -161,7 +161,8 @@
                                    historyDateTo=${historyFilter.dateTo},
                                    historyPage=${historyFilter.page},
                                    historySize=${historyFilter.pageSize})}"
-                               title="Изменить" aria-label="Изменить">
+                               data-bs-toggle="tooltip" data-bs-title="Изменить"
+                               aria-label="Изменить">
                                 <i class="bi bi-pencil" aria-hidden="true"></i>
                             </a>
                             <form th:action="@{/participants/{participantId}/payments/{paymentId}/void(
@@ -180,7 +181,8 @@
                                 <input type="hidden" name="historyPage" th:value="${historyFilter.page}">
                                 <input type="hidden" name="historySize" th:value="${historyFilter.pageSize}">
                                 <button type="submit" class="btn btn-sm btn-outline-danger"
-                                        title="Аннулировать" aria-label="Аннулировать"
+                                        data-bs-toggle="tooltip" data-bs-title="Аннулировать"
+                                        aria-label="Аннулировать"
                                         onclick="return confirm('Аннулировать платёж? Платёж останется в истории, но не будет учитываться в расчётах.');">
                                     <i class="bi bi-x-circle" aria-hidden="true"></i>
                                 </button>

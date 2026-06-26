@@ -13,6 +13,7 @@ import com.eliteseriespay.service.PaymentFormDefaults;
 import com.eliteseriespay.service.ParticipantService;
 import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
+import com.eliteseriespay.service.ProjectService;
 import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.form.PaymentForm;
 import jakarta.validation.Valid;
@@ -40,13 +41,16 @@ public class ParticipantPaymentController {
 
     private final ParticipantService participantService;
     private final ProjectMembershipService projectMembershipService;
+    private final ProjectService projectService;
     private final PaymentService paymentService;
 
     public ParticipantPaymentController(ParticipantService participantService,
                                         ProjectMembershipService projectMembershipService,
+                                        ProjectService projectService,
                                         PaymentService paymentService) {
         this.participantService = participantService;
         this.projectMembershipService = projectMembershipService;
+        this.projectService = projectService;
         this.paymentService = paymentService;
     }
 
@@ -73,7 +77,25 @@ public class ParticipantPaymentController {
     }
 
     @GetMapping("/new")
-    public String createForm(@PathVariable Long participantId, Model model) {
+    public String createForm(@PathVariable Long participantId,
+                             @RequestParam(value = "initialMembership", defaultValue = "false") boolean initialMembership,
+                             @RequestParam(value = "projectId", required = false) Long projectId,
+                             @RequestParam(value = "returnTo", required = false) String returnTo,
+                             Model model) {
+        if (initialMembership) {
+            if (projectId == null) {
+                return "redirect:/participants/" + participantId;
+            }
+            projectService.findById(projectId);
+            participantService.findById(participantId);
+
+            PaymentForm paymentForm = new PaymentForm();
+            paymentForm.setProjectId(projectId);
+            paymentForm.setPaymentDate(LocalDate.now());
+            populateInitialMembershipFormModel(model, participantId, projectId, returnTo, paymentForm);
+            return "participants/payment-new";
+        }
+
         List<ProjectMembership> activeMemberships =
                 projectMembershipService.findActiveByParticipantId(participantId);
         if (activeMemberships.isEmpty()) {
@@ -87,7 +109,10 @@ public class ParticipantPaymentController {
         PaymentForm paymentForm = toPaymentForm(
                 paymentService.getNewPaymentFormDefaults(participantId, activeProjectIds));
         paymentForm.setPaymentDate(LocalDate.now());
-        populateFormModel(model, participantId, activeMemberships, paymentForm);
+        if (projectId != null && activeProjectIds.contains(projectId)) {
+            paymentForm.setProjectId(projectId);
+        }
+        populateFormModel(model, participantId, activeMemberships, paymentForm, false, null);
         return "participants/payment-new";
     }
 
@@ -95,7 +120,13 @@ public class ParticipantPaymentController {
     public String create(@PathVariable Long participantId,
                          @Valid @ModelAttribute("paymentForm") PaymentForm paymentForm,
                          BindingResult bindingResult,
+                         @RequestParam(value = "initialMembership", defaultValue = "false") boolean initialMembership,
+                         @RequestParam(value = "returnTo", required = false) String returnTo,
                          Model model) {
+        if (initialMembership) {
+            return createInitialMembershipPayment(participantId, paymentForm, bindingResult, returnTo, model);
+        }
+
         List<ProjectMembership> activeMemberships =
                 projectMembershipService.findActiveByParticipantId(participantId);
         if (activeMemberships.isEmpty()) {
@@ -103,7 +134,7 @@ public class ParticipantPaymentController {
         }
 
         if (bindingResult.hasErrors()) {
-            populateFormModel(model, participantId, activeMemberships, paymentForm);
+            populateFormModel(model, participantId, activeMemberships, paymentForm, false, null);
             return "participants/payment-new";
         }
 
@@ -119,7 +150,7 @@ public class ParticipantPaymentController {
                     paymentForm.getComment());
         } catch (ValidationException ex) {
             rejectPaymentForm(bindingResult, ex);
-            populateFormModel(model, participantId, activeMemberships, paymentForm);
+            populateFormModel(model, participantId, activeMemberships, paymentForm, false, null);
             return "participants/payment-new";
         }
 
@@ -255,12 +286,66 @@ public class ParticipantPaymentController {
     private void populateFormModel(Model model,
                                    Long participantId,
                                    List<ProjectMembership> activeMemberships,
-                                   PaymentForm paymentForm) {
+                                   PaymentForm paymentForm,
+                                   boolean initialMembership,
+                                   String returnTo) {
         Participant participant = participantService.findById(participantId);
         model.addAttribute("participant", participant);
         model.addAttribute("participantId", participantId);
         model.addAttribute("activeMemberships", activeMemberships);
         model.addAttribute("paymentForm", paymentForm);
+        model.addAttribute("initialMembership", initialMembership);
+        model.addAttribute("returnTo", returnTo);
+    }
+
+    private void populateInitialMembershipFormModel(Model model,
+                                                    Long participantId,
+                                                    Long projectId,
+                                                    String returnTo,
+                                                    PaymentForm paymentForm) {
+        Participant participant = participantService.findById(participantId);
+        Project project = projectService.findById(projectId);
+        model.addAttribute("participant", participant);
+        model.addAttribute("participantId", participantId);
+        model.addAttribute("initialMembershipProject", project);
+        model.addAttribute("paymentForm", paymentForm);
+        model.addAttribute("initialMembership", true);
+        model.addAttribute("returnTo", returnTo != null ? returnTo : "/participants/" + participantId);
+    }
+
+    private String createInitialMembershipPayment(Long participantId,
+                                                PaymentForm paymentForm,
+                                                BindingResult bindingResult,
+                                                String returnTo,
+                                                Model model) {
+        Long projectId = paymentForm.getProjectId();
+        if (projectId == null) {
+            return "redirect:/participants/" + participantId;
+        }
+
+        if (bindingResult.hasErrors()) {
+            populateInitialMembershipFormModel(model, participantId, projectId, returnTo, paymentForm);
+            return "participants/payment-new";
+        }
+
+        try {
+            paymentService.createInitialMembershipPayment(
+                    participantId,
+                    projectId,
+                    paymentForm.getPaymentDate(),
+                    paymentForm.getSource(),
+                    paymentForm.getAmountOriginal(),
+                    paymentForm.getCurrency(),
+                    paymentForm.getExchangeRate(),
+                    paymentForm.getComment());
+        } catch (ValidationException ex) {
+            rejectPaymentForm(bindingResult, ex);
+            populateInitialMembershipFormModel(model, participantId, projectId, returnTo, paymentForm);
+            return "participants/payment-new";
+        }
+
+        String redirectTarget = returnTo != null ? returnTo : "/participants/" + participantId;
+        return "redirect:" + redirectTarget;
     }
 
     private void populateEditFormModel(Model model,

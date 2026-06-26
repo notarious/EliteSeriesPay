@@ -78,14 +78,16 @@
                     </td>
                     <td class="text-end">
                         <div class="d-inline-flex gap-1">
-                            <a class="btn btn-sm btn-outline-secondary"
-                               th:href="@{/participants/{id}(id=${participant.id})}"
-                               title="Открыть" aria-label="Открыть">
-                                <i class="bi bi-eye" aria-hidden="true"></i>
-                            </a>
-                            <a class="btn btn-sm btn-outline-primary"
-                               th:href="@{/participants/{id}/edit(id=${participant.id})}"
-                               title="Изменить" aria-label="Изменить">
+                        <a class="btn btn-sm btn-outline-secondary"
+                           th:href="@{/participants/{id}(id=${participant.id})}"
+                           data-bs-toggle="tooltip" data-bs-title="Просмотр"
+                           aria-label="Просмотр">
+                            <i class="bi bi-eye" aria-hidden="true"></i>
+                        </a>
+                        <a class="btn btn-sm btn-outline-primary"
+                           th:href="@{/participants/{id}/edit(id=${participant.id})}"
+                           data-bs-toggle="tooltip" data-bs-title="Изменить"
+                           aria-label="Изменить">
                                 <i class="bi bi-pencil" aria-hidden="true"></i>
                             </a>
                         </div>

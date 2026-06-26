@@ -55,7 +55,7 @@
                                     th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
                                 <option th:each="mode : ${billingModes}"
                                         th:value="${mode.name()}"
-                                        th:text="${mode.name() == 'SUBSCRIPTION' ? 'Абонемент' : 'Пакет'}">Абонемент</option>
+                                        th:text="${mode.displayName}">Абонемент</option>
                             </select>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
                                  th:errors="*{billingMode}"></div>
@@ -70,7 +70,7 @@
                 <div class="card-header">Новый участник</div>
                 <div class="card-body">
                     <form th:action="@{/projects/{projectId}/participants(projectId=${projectId})}"
-                          th:object="${participantForm}" method="post" novalidate>
+                          th:object="${projectNewParticipantForm}" method="post" novalidate>
                         <div class="mb-3">
                             <label for="vkId" class="form-label">VK ID</label>
                             <input type="text" class="form-control" id="vkId" th:field="*{vkId}"
@@ -93,7 +93,7 @@
                                     th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
                                 <option th:each="mode : ${billingModes}"
                                         th:value="${mode.name()}"
-                                        th:text="${mode.name() == 'SUBSCRIPTION' ? 'Абонемент' : 'Пакет'}">Абонемент</option>
+                                        th:text="${mode.displayName}">Абонемент</option>
                             </select>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
                                  th:errors="*{billingMode}"></div>

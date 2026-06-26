@@ -11,6 +11,7 @@ public record ProjectParticipantBillingView(Participant participant,
                                             YearMonth paidUntilMonth,
                                             SubscriptionPaymentStatus subscriptionPaymentStatus,
                                             String paymentStatusLabel,
+                                            String statusCssClass,
                                             PartialPaymentInfo partialPaymentInfo) {
 
     public static ProjectParticipantBillingView forSubscription(Participant participant,
@@ -24,6 +25,7 @@ public record ProjectParticipantBillingView(Participant participant,
                 paidUntilMonth,
                 status,
                 subscriptionStatusLabel(status),
+                subscriptionStatusCssClass(status),
                 partialPaymentInfo);
     }
 
@@ -35,14 +37,21 @@ public record ProjectParticipantBillingView(Participant participant,
                 null,
                 null,
                 "Пакет",
+                "",
                 null);
     }
 
-    private static String subscriptionStatusLabel(SubscriptionPaymentStatus status) {
+    public static String subscriptionStatusLabel(SubscriptionPaymentStatus status) {
         return switch (status) {
-            case NO_PAYMENTS -> "Нет оплат";
+            case NO_PAYMENTS, OVERDUE -> "Просрочен";
             case ACTIVE -> "Активен";
-            case OVERDUE -> "Просрочен";
+        };
+    }
+
+    public static String subscriptionStatusCssClass(SubscriptionPaymentStatus status) {
+        return switch (status) {
+            case ACTIVE -> "text-success";
+            case NO_PAYMENTS, OVERDUE -> "text-danger";
         };
     }
 }
