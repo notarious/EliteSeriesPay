@@ -33,6 +33,10 @@
                     <a class="nav-link" th:href="@{/backups}"
                        th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/backups')} ? 'active'">Резервные копии</a>
                 </li>
+                <li class="nav-item">
+                    <button class="nav-link border-0 bg-transparent" type="button"
+                            data-bs-toggle="modal" data-bs-target="#resetDataModal">Очистить данные</button>
+                </li>
             </ul>
         </div>
     </div>
@@ -47,6 +51,29 @@
         EliteSeriesPay &mdash; локальное приложение для учёта платежей и бюджетов сообществ
     </div>
 </footer>
+
+<div class="modal fade" id="resetDataModal" tabindex="-1" aria-labelledby="resetDataModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetDataModalLabel">Очистить все данные?</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Закрыть"></button>
+            </div>
+            <div class="modal-body">
+                <p class="mb-0">
+                    Будут удалены все проекты, участники, платежи и настройки.
+                    Это действие нельзя отменить.
+                </p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Отмена</button>
+                <form method="post" th:action="@{/reset-data}" class="d-inline">
+                    <button type="submit" class="btn btn-danger">Очистить</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO"

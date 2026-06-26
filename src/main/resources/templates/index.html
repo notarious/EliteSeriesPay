@@ -6,6 +6,10 @@
 </head>
 <body>
 <div th:fragment="content">
+    <div class="alert alert-success py-2" th:if="${successMessage}" th:text="${successMessage}">
+        Все данные успешно удалены.
+    </div>
+
     <div class="row">
         <div class="col-lg-8">
             <h1 class="mb-3">EliteSeriesPay</h1>
