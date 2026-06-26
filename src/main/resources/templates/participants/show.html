@@ -99,42 +99,12 @@
                     <a th:href="@{/projects/{id}(id=${view.project.id})}"
                        th:text="${view.project.name}">Пример проекта</a>
                 </td>
-                <td th:text="${view.billingModeLabel}">Абонемент</td>
-                <td>
-                    <span th:if="${view.paidUntilMonth != null}"
-                          th:text="${#temporals.format(view.paidUntilMonth.atDay(1), 'MM.yyyy')}">06.2026</span>
-                </td>
-                <td>
-                    <span th:classappend="${view.statusCssClass}"
-                          th:text="${view.paymentStatusLabel}">Активен</span>
-                </td>
-                <td>
-                    <span th:if="${view.partialPaymentInfo != null}"
-                          th:with="partial=${view.partialPaymentInfo}">
-                        <span th:text="${#numbers.formatDecimal(partial.advanceAmount, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
-                        <span class="text-muted">· До продления:</span>
-                        <span th:text="${#numbers.formatDecimal(partial.remainingUntilRenewal, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
-                    </span>
-                </td>
-                <td class="text-end">
-                    <div class="d-inline-flex gap-1">
-                        <a class="btn btn-sm btn-outline-success"
-                           th:href="@{/participants/{participantId}/payments/new(participantId=${participant.id}, projectId=${view.project.id})}"
-                           data-bs-toggle="tooltip" data-bs-title="Оплата"
-                           aria-label="Оплата">
-                            <i class="bi bi-cash-coin" aria-hidden="true"></i>
-                        </a>
-                        <form th:action="@{/participants/{participantId}/projects/{projectId}/remove(participantId=${participant.id}, projectId=${view.project.id})}"
-                              method="post" class="d-inline">
-                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    data-bs-toggle="tooltip" data-bs-title="Исключить из проекта"
-                                    aria-label="Исключить из проекта"
-                                    onclick="return confirm('Исключить участника из проекта?');">
-                                <i class="bi bi-person-dash" aria-hidden="true"></i>
-                            </button>
-                        </form>
-                    </div>
-                </td>
+                <th:block th:replace="~{fragments/membership-billing-cells :: cells(
+                    row=${view},
+                    paymentUrl=@{/participants/{participantId}/payments/new(participantId=${participant.id}, projectId=${view.project.id})},
+                    removeUrl=@{/participants/{participantId}/projects/{projectId}/remove(participantId=${participant.id}, projectId=${view.project.id})},
+                    extraActions=~{}
+                )}"/>
             </tr>
             </tbody>
         </table>

@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+<th:block th:fragment="cells(row, paymentUrl, removeUrl, extraActions)">
+    <td th:text="${row.billingModeLabel}">Абонемент</td>
+    <td>
+        <span th:if="${row.paidUntilMonth != null}"
+              th:text="${#temporals.format(row.paidUntilMonth.atDay(1), 'MM.yyyy')}">06.2026</span>
+    </td>
+    <td>
+        <span th:classappend="${row.statusCssClass}"
+              th:text="${row.paymentStatusLabel}">Активен</span>
+    </td>
+    <td>
+        <span th:if="${row.partialPaymentInfo != null}"
+              th:with="partial=${row.partialPaymentInfo}">
+            <span th:text="${#numbers.formatDecimal(partial.advanceAmount, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
+            <span class="text-muted">· До продления:</span>
+            <span th:text="${#numbers.formatDecimal(partial.remainingUntilRenewal, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
+        </span>
+    </td>
+    <td class="text-end">
+        <div class="d-inline-flex gap-1">
+            <th:block th:replace="${extraActions} ?: ~{}"/>
+            <a class="btn btn-sm btn-outline-success"
+               th:href="${paymentUrl}"
+               data-bs-toggle="tooltip" data-bs-title="Оплата"
+               aria-label="Оплата">
+                <i class="bi bi-cash-coin" aria-hidden="true"></i>
+            </a>
+            <form th:action="${removeUrl}" method="post" class="d-inline">
+                <button type="submit" class="btn btn-sm btn-outline-danger"
+                        data-bs-toggle="tooltip" data-bs-title="Исключить из проекта"
+                        aria-label="Исключить из проекта"
+                        onclick="return confirm('Исключить участника из проекта?');">
+                    <i class="bi bi-person-dash" aria-hidden="true"></i>
+                </button>
+            </form>
+        </div>
+    </td>
+</th:block>
+</body>
+</html>
