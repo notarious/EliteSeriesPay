@@ -641,8 +641,18 @@ class PaymentServiceTest {
                 PARTICIPANT_ID, PROJECT_ID, PAYMENT_DATE, PaymentSource.MANUAL,
                 new BigDecimal("499.99"), PaymentCurrency.RUB, null, null))
                 .isInstanceOf(ValidationException.class)
-                .extracting(ex -> ((ValidationException) ex).getError())
-                .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT);
+                .satisfies(ex -> {
+                    ValidationException validationException = (ValidationException) ex;
+                    assertThat(validationException.getError())
+                            .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT);
+                    assertThat(validationException.getMessage())
+                            .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT.getMessage()
+                                    + ": "
+                                    + project.getMonthlyFeeRub().stripTrailingZeros().toPlainString()
+                                    + " "
+                                    + PaymentCurrency.RUB.getDisplayName()
+                                    + ".");
+                });
 
         verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));
         verify(paymentRepository, never()).save(any(Payment.class));

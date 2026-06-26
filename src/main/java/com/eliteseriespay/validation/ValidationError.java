@@ -25,7 +25,7 @@ public enum ValidationError {
     PAYMENT_VOIDED("Аннулированный платёж нельзя изменить"),
     PAYMENT_ALREADY_VOIDED("Платёж уже аннулирован"),
     INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT(
-            "Для вступления в проект по абонементу нужно оплатить полный месячный абонемент"),
+            "Для вступления в проект необходимо оплатить полный месячный абонемент"),
     INITIAL_SUBSCRIPTION_PAYMENT_USD_NOT_SUPPORTED(
             "Для первого платежа по абонементу выберите рубли или евро");
 
