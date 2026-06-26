@@ -4,7 +4,7 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
-import com.eliteseriespay.service.MembershipAddResult;
+import com.eliteseriespay.membership.MembershipAddResult;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.FormErrorMapper;

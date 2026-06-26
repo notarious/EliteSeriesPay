@@ -32,8 +32,14 @@
 
     <div class="d-flex justify-content-between align-items-center mb-3">
         <h2 class="h4 mb-0">Участники</h2>
-        <a class="btn btn-primary btn-sm"
-           th:href="@{/projects/{projectId}/participants/new(projectId=${project.id})}">Добавить участника</a>
+        <div class="d-flex gap-2">
+            <a class="btn btn-outline-secondary btn-sm"
+               th:href="@{/projects/{projectId}/reports(projectId=${project.id})}">Отчеты</a>
+            <a class="btn btn-outline-secondary btn-sm"
+               th:href="@{/projects/{projectId}/payments(projectId=${project.id})}">История платежей проекта</a>
+            <a class="btn btn-primary btn-sm"
+               th:href="@{/projects/{projectId}/participants/new(projectId=${project.id})}">Добавить участника</a>
+        </div>
     </div>
 
     <form class="row g-3 align-items-end mb-3" method="get" th:action="@{/projects/{id}(id=${project.id})}">
@@ -96,6 +102,31 @@
             </tr>
             </tbody>
         </table>
+    </div>
+
+    <div class="card mt-4">
+        <div class="card-body py-3 px-3">
+            <h2 class="h6 mb-2" th:text="${monthlySummary.monthLabel}">Июнь 2026</h2>
+            <p th:if="${!monthlySummary.hasPayments()}" class="text-muted small mb-0">
+                За текущий месяц поступлений нет.
+            </p>
+            <div th:if="${monthlySummary.hasPayments()}" class="small text-muted mb-0">
+                <p class="mb-1">
+                    Получено чистыми:
+                    <span th:text="${monthlySummary.totalNetRubFormatted}">31 800,00 ₽</span>
+                </p>
+                <p class="mb-1">
+                    Стоимость серии:
+                    <span th:text="${monthlySummary.episodeCostRubFormatted}">4 500,00 ₽</span>
+                </p>
+                <p class="mb-1" th:text="${monthlySummary.episodesFundedLine}">Собрано на 7 серий.</p>
+                <p class="mb-1" th:if="${monthlySummary.remainingLine != null}"
+                   th:text="${monthlySummary.remainingLine}">Остаток: 300,00 ₽.</p>
+                <p class="mb-0" th:text="${monthlySummary.amountToNextEpisodeLine}">
+                    До 8-й серии осталось: 4 200,00 ₽.
+                </p>
+            </div>
+        </div>
     </div>
 </div>
 

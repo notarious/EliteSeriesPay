@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.payment.history;
 
 import static org.assertj.core.api.Assertions.assertThat;
 

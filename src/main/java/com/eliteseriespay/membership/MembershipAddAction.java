@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.membership;
 
 public enum MembershipAddAction {
 

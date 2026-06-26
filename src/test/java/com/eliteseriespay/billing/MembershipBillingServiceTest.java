@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.billing;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -90,7 +90,7 @@ class MembershipBillingServiceTest {
     }
 
     @Test
-    void buildProjectParticipantViews_showsPartialPaymentOnlyWhenPresent() {
+    void buildProjectParticipantViews_hidesPartialPaymentWhenSubscriptionActive() {
         ProjectMembership membership = TestEntities.membership(
                 project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
         membership.updateBilling(CURRENT_MONTH, new BigDecimal("100.00"), PaymentCurrency.RUB);
@@ -101,6 +101,51 @@ class MembershipBillingServiceTest {
                 MembershipPaymentStatusFilter.ALL,
                 CURRENT_MONTH);
 
+        assertThat(views.getFirst().subscriptionPaymentStatus()).isEqualTo(SubscriptionPaymentStatus.ACTIVE);
+        assertThat(views.getFirst().partialPaymentInfo()).isNull();
+    }
+
+    @Test
+    void buildProjectParticipantViews_showsPartialPaymentWhenSubscriptionNotActive() {
+        ProjectMembership membership = TestEntities.membership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        membership.updateBilling(null, new BigDecimal("100.00"), PaymentCurrency.RUB);
+
+        List<ProjectParticipantBillingView> views = membershipBillingService.buildProjectParticipantViews(
+                List.of(membership),
+                BillingModeFilter.ALL,
+                MembershipPaymentStatusFilter.ALL,
+                CURRENT_MONTH);
+
+        assertThat(views.getFirst().subscriptionPaymentStatus()).isEqualTo(SubscriptionPaymentStatus.NO_PAYMENTS);
+        assertThat(views.getFirst().partialPaymentInfo()).isNotNull();
+        assertThat(views.getFirst().partialPaymentInfo().advanceAmount())
+                .isEqualByComparingTo("100.00");
+    }
+
+    @Test
+    void buildParticipantMembershipViews_hidesPartialPaymentWhenSubscriptionActive() {
+        ProjectMembership membership = TestEntities.membership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        membership.updateBilling(CURRENT_MONTH, new BigDecimal("100.00"), PaymentCurrency.RUB);
+
+        List<ParticipantMembershipBillingView> views = membershipBillingService.buildParticipantMembershipViews(
+                List.of(membership), CURRENT_MONTH);
+
+        assertThat(views.getFirst().paymentStatusLabel()).isEqualTo("Активен");
+        assertThat(views.getFirst().partialPaymentInfo()).isNull();
+    }
+
+    @Test
+    void buildParticipantMembershipViews_showsPartialPaymentWhenSubscriptionOverdue() {
+        ProjectMembership membership = TestEntities.membership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        membership.updateBilling(CURRENT_MONTH.minusMonths(1), new BigDecimal("100.00"), PaymentCurrency.RUB);
+
+        List<ParticipantMembershipBillingView> views = membershipBillingService.buildParticipantMembershipViews(
+                List.of(membership), CURRENT_MONTH);
+
+        assertThat(views.getFirst().paymentStatusLabel()).isEqualTo("Просрочен");
         assertThat(views.getFirst().partialPaymentInfo()).isNotNull();
         assertThat(views.getFirst().partialPaymentInfo().advanceAmount())
                 .isEqualByComparingTo("100.00");

@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.billing;
 
 public enum MembershipPaymentStatusFilter {
 

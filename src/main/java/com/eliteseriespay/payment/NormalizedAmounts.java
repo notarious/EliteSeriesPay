@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.payment;
 
 import java.math.BigDecimal;
 

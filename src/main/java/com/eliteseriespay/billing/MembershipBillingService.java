@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.billing;
 
 import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Payment;
@@ -93,7 +93,7 @@ public class MembershipBillingService {
                 membership.getParticipant(),
                 membership.getPaidUntilMonth(),
                 status,
-                partialPaymentInfo.orElse(null));
+                displayPartialPaymentInfo(status, partialPaymentInfo.orElse(null)));
     }
 
     private ParticipantMembershipBillingView toParticipantBillingView(ProjectMembership membership,
@@ -113,6 +113,14 @@ public class MembershipBillingService {
                 membership.getProject(),
                 membership.getPaidUntilMonth(),
                 status,
-                partialPaymentInfo.orElse(null));
+                displayPartialPaymentInfo(status, partialPaymentInfo.orElse(null)));
+    }
+
+    private static PartialPaymentInfo displayPartialPaymentInfo(SubscriptionPaymentStatus status,
+                                                                  PartialPaymentInfo partialPaymentInfo) {
+        if (status == SubscriptionPaymentStatus.ACTIVE) {
+            return null;
+        }
+        return partialPaymentInfo;
     }
 }

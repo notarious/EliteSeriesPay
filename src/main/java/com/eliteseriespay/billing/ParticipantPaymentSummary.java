@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.billing;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;

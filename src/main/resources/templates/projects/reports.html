@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="ru" xmlns:th="http://www.thymeleaf.org"
+      th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
+<head>
+    <title th:text="'Отчеты — ' + ${project.name} + ' — EliteSeriesPay'">Отчеты — EliteSeriesPay</title>
+</head>
+<body>
+<div th:fragment="content">
+    <div class="d-flex justify-content-between align-items-start mb-4">
+        <div>
+            <h1 class="mb-1">Отчеты</h1>
+            <p class="text-muted mb-0">
+                Проект:
+                <a th:href="@{/projects/{id}(id=${project.id})}" th:text="${project.name}">Пример проекта</a>
+            </p>
+        </div>
+        <a class="btn btn-outline-secondary" th:href="@{/projects/{id}(id=${project.id})}">К проекту</a>
+    </div>
+
+    <form class="row g-2 align-items-end mb-4" method="get"
+          th:action="@{/projects/{projectId}/reports(projectId=${project.id})}">
+        <div class="col-auto">
+            <label class="form-label small mb-1" for="month">Месяц</label>
+            <select class="form-select form-select-sm" id="month" name="month" required>
+                <option th:each="m : ${#numbers.sequence(1, 12)}"
+                        th:value="${m}"
+                        th:selected="${m == selectedMonth}"
+                        th:text="${#temporals.format(T(java.time.YearMonth).of(selectedYear, m).atDay(1), 'LLLL')}">
+                    Июнь
+                </option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <label class="form-label small mb-1" for="year">Год</label>
+            <input class="form-control form-control-sm" id="year" name="year" type="number"
+                   min="2000" max="2100" required th:value="${selectedYear}">
+        </div>
+        <div class="col-auto">
+            <button class="btn btn-primary btn-sm" type="submit">Показать</button>
+        </div>
+    </form>
+
+    <h2 class="h5 mb-3" th:text="${report.monthLabel}">Июнь 2026</h2>
+
+    <div th:if="${!report.hasPayments()}" class="alert alert-info">
+        За выбранный месяц поступлений нет.
+    </div>
+
+    <div th:if="${report.hasPayments()}">
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted small">Получено</div>
+                        <div class="fw-semibold" th:text="${report.totalGrossRubFormatted}">35 000,00 ₽</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted small">Чистыми</div>
+                        <div class="fw-semibold" th:text="${report.totalNetRubFormatted}">31 800,00 ₽</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted small">Серий оплачено</div>
+                        <div class="fw-semibold" th:text="${report.episodeFunding.episodesFunded()}">7</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-lg-3">
+                <div class="card h-100">
+                    <div class="card-body py-2 px-3">
+                        <div class="text-muted small">Остаток</div>
+                        <div class="fw-semibold" th:text="${report.remainingRubFormatted}">300,00 ₽</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <h3 class="h6 mb-2">По источникам</h3>
+        <div class="table-responsive mb-4">
+            <table class="table table-sm table-striped align-middle">
+                <thead>
+                <tr>
+                    <th scope="col">Источник</th>
+                    <th scope="col" class="text-end">Платежей</th>
+                    <th scope="col" class="text-end">Сумма</th>
+                    <th scope="col" class="text-end">Чистыми</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${report.sourceBreakdown}">
+                    <td th:text="${row.sourceLabel}">VK Donut (-10%)</td>
+                    <td class="text-end" th:text="${row.paymentCount}">5</td>
+                    <td class="text-end" th:text="${row.grossAmountRub}">10 000,00 ₽</td>
+                    <td class="text-end" th:text="${row.netAmountRub}">9 000,00 ₽</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div th:if="${!#lists.isEmpty(report.participantContributions)}">
+            <h3 class="h6 mb-2">Вклад участников</h3>
+            <div class="table-responsive">
+                <table class="table table-sm table-striped align-middle">
+                    <thead>
+                    <tr>
+                        <th scope="col">Участник</th>
+                        <th scope="col">Тип участия</th>
+                        <th scope="col" class="text-end">Чистыми</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="row : ${report.participantContributions}">
+                        <td th:text="${row.participantName}">Иван</td>
+                        <td th:text="${row.billingModeLabel}">Абонемент</td>
+                        <td class="text-end" th:text="${row.netContributionRub}">5 000,00 ₽</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+</body>
+</html>

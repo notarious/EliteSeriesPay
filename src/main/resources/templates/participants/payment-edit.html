@@ -30,13 +30,21 @@
 
                 <th:block th:replace="~{fragments/payment-form-fields :: fields}"/>
 
-                <th:block th:each="historyParam : ${historyNavigation.formParams()}">
+                <th:block th:if="${projectHistoryNavigation != null}"
+                          th:each="historyParam : ${projectHistoryNavigation.formParams()}">
+                    <input type="hidden" th:name="${historyParam.name}" th:value="${historyParam.value}">
+                </th:block>
+                <th:block th:if="${projectHistoryNavigation == null}"
+                          th:each="historyParam : ${historyNavigation.formParams()}">
                     <input type="hidden" th:name="${historyParam.name}" th:value="${historyParam.value}">
                 </th:block>
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Сохранить изменения</button>
-                    <a class="btn btn-outline-secondary" th:href="${historyNavigation.listUrl()}">Отмена</a>
+                    <a th:if="${projectHistoryNavigation != null}" class="btn btn-outline-secondary"
+                       th:href="${projectHistoryNavigation.listUrl()}">Отмена</a>
+                    <a th:unless="${projectHistoryNavigation != null}" class="btn btn-outline-secondary"
+                       th:href="${historyNavigation.listUrl()}">Отмена</a>
                 </div>
             </form>
         </div>

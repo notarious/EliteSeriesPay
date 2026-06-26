@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.billing;
 
 import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Payment;

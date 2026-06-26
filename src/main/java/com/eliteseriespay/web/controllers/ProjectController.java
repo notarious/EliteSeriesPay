@@ -5,9 +5,10 @@ import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
-import com.eliteseriespay.service.BillingModeFilter;
-import com.eliteseriespay.service.MembershipBillingService;
-import com.eliteseriespay.service.MembershipPaymentStatusFilter;
+import com.eliteseriespay.billing.BillingModeFilter;
+import com.eliteseriespay.billing.MembershipBillingService;
+import com.eliteseriespay.billing.MembershipPaymentStatusFilter;
+import com.eliteseriespay.report.ProjectReportService;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
 import com.eliteseriespay.web.FormErrorMapper;
@@ -32,15 +33,18 @@ public class ProjectController {
     private final ProjectService projectService;
     private final ProjectMembershipService projectMembershipService;
     private final MembershipBillingService membershipBillingService;
+    private final ProjectReportService projectReportService;
     private final FormErrorMapper formErrorMapper;
 
     public ProjectController(ProjectService projectService,
                              ProjectMembershipService projectMembershipService,
                              MembershipBillingService membershipBillingService,
+                             ProjectReportService projectReportService,
                              FormErrorMapper formErrorMapper) {
         this.projectService = projectService;
         this.projectMembershipService = projectMembershipService;
         this.membershipBillingService = membershipBillingService;
+        this.projectReportService = projectReportService;
         this.formErrorMapper = formErrorMapper;
     }
 
@@ -95,6 +99,7 @@ public class ProjectController {
         model.addAttribute("selectedPaymentStatus", paymentStatus);
         model.addAttribute("billingModes", BillingMode.values());
         model.addAttribute("paymentStatusFilters", MembershipPaymentStatusFilter.values());
+        model.addAttribute("monthlySummary", projectReportService.buildCurrentMonthSummary(id));
         return "projects/show";
     }
 

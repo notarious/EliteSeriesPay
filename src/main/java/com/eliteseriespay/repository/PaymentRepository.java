@@ -1,9 +1,15 @@
 package com.eliteseriespay.repository;
 
 import com.eliteseriespay.domain.Payment;
+import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
 import com.eliteseriespay.domain.PaymentStatus;
+import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Project;
+import com.eliteseriespay.domain.BillingMode;
+import com.eliteseriespay.report.MonthlyPaymentAggregate;
+import com.eliteseriespay.report.ParticipantNetAggregate;
+import com.eliteseriespay.report.SourcePaymentAggregate;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -53,6 +59,50 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
                                                 @Param("dateFrom") LocalDate dateFrom,
                                                 @Param("dateTo") LocalDate dateTo,
                                                 Pageable pageable);
+
+    @EntityGraph(attributePaths = {"participant", "project"})
+    @Query(value = """
+            SELECT p FROM Payment p
+            JOIN ProjectMembership m ON m.project.id = p.project.id AND m.participant.id = p.participant.id
+            WHERE p.project.id = :projectId
+            AND (:participantId IS NULL OR p.participant.id = :participantId)
+            AND (:billingMode IS NULL OR m.billingMode = :billingMode)
+            AND (:source IS NULL OR p.source = :source)
+            AND (:currency IS NULL OR p.currency = :currency)
+            AND (:status IS NULL OR p.status = :status)
+            AND (:dateFrom IS NULL OR p.paymentDate >= :dateFrom)
+            AND (:dateTo IS NULL OR p.paymentDate <= :dateTo)
+            """,
+            countQuery = """
+            SELECT COUNT(p) FROM Payment p
+            JOIN ProjectMembership m ON m.project.id = p.project.id AND m.participant.id = p.participant.id
+            WHERE p.project.id = :projectId
+            AND (:participantId IS NULL OR p.participant.id = :participantId)
+            AND (:billingMode IS NULL OR m.billingMode = :billingMode)
+            AND (:source IS NULL OR p.source = :source)
+            AND (:currency IS NULL OR p.currency = :currency)
+            AND (:status IS NULL OR p.status = :status)
+            AND (:dateFrom IS NULL OR p.paymentDate >= :dateFrom)
+            AND (:dateTo IS NULL OR p.paymentDate <= :dateTo)
+            """)
+    Page<Payment> findProjectPaymentHistory(@Param("projectId") Long projectId,
+                                            @Param("participantId") Long participantId,
+                                            @Param("billingMode") BillingMode billingMode,
+                                            @Param("source") PaymentSource source,
+                                            @Param("currency") PaymentCurrency currency,
+                                            @Param("status") PaymentStatus status,
+                                            @Param("dateFrom") LocalDate dateFrom,
+                                            @Param("dateTo") LocalDate dateTo,
+                                            Pageable pageable);
+
+    @Query("""
+            SELECT DISTINCT p.participant FROM Payment p
+            WHERE p.project.id = :projectId
+            ORDER BY p.participant.name ASC
+            """)
+    List<Participant> findDistinctParticipantsByProjectIdOrderByNameAsc(@Param("projectId") Long projectId);
+
+    boolean existsByProject_Id(Long projectId);
 
     @Query("""
             SELECT DISTINCT p.project FROM Payment p
@@ -107,4 +157,48 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
             """)
     List<Payment> findActivePaymentsByProjectAndParticipant(@Param("projectId") Long projectId,
                                                             @Param("participantId") Long participantId);
+
+    @Query("""
+            SELECT new com.eliteseriespay.report.MonthlyPaymentAggregate(
+                COUNT(p), COALESCE(SUM(p.amountRub), 0), COALESCE(SUM(p.netAmountRub), 0))
+            FROM Payment p
+            WHERE p.project.id = :projectId
+            AND p.status = com.eliteseriespay.domain.PaymentStatus.ACTIVE
+            AND p.paymentDate >= :dateFrom
+            AND p.paymentDate <= :dateTo
+            """)
+    MonthlyPaymentAggregate sumActivePaymentsByProjectAndDateRange(@Param("projectId") Long projectId,
+                                                                   @Param("dateFrom") LocalDate dateFrom,
+                                                                   @Param("dateTo") LocalDate dateTo);
+
+    @Query("""
+            SELECT new com.eliteseriespay.report.SourcePaymentAggregate(
+                p.source, COUNT(p), COALESCE(SUM(p.amountRub), 0), COALESCE(SUM(p.netAmountRub), 0))
+            FROM Payment p
+            WHERE p.project.id = :projectId
+            AND p.status = com.eliteseriespay.domain.PaymentStatus.ACTIVE
+            AND p.paymentDate >= :dateFrom
+            AND p.paymentDate <= :dateTo
+            GROUP BY p.source
+            """)
+    List<SourcePaymentAggregate> sumActivePaymentsByProjectAndDateRangeGroupBySource(
+            @Param("projectId") Long projectId,
+            @Param("dateFrom") LocalDate dateFrom,
+            @Param("dateTo") LocalDate dateTo);
+
+    @Query("""
+            SELECT new com.eliteseriespay.report.ParticipantNetAggregate(
+                p.participant.name, m.billingMode, COALESCE(SUM(p.netAmountRub), 0))
+            FROM Payment p
+            JOIN ProjectMembership m ON m.project.id = p.project.id AND m.participant.id = p.participant.id
+            WHERE p.project.id = :projectId
+            AND p.status = com.eliteseriespay.domain.PaymentStatus.ACTIVE
+            AND p.paymentDate >= :dateFrom
+            AND p.paymentDate <= :dateTo
+            GROUP BY p.participant.id, p.participant.name, m.billingMode
+            ORDER BY p.participant.name ASC
+            """)
+    List<ParticipantNetAggregate> sumNetByParticipantForProjectAndDateRange(@Param("projectId") Long projectId,
+                                                                            @Param("dateFrom") LocalDate dateFrom,
+                                                                            @Param("dateTo") LocalDate dateTo);
 }

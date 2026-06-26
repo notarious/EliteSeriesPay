@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.payment;
 
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;

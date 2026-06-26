@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.payment.history;
 
 import com.eliteseriespay.domain.PaymentSource;
 import com.eliteseriespay.domain.PaymentStatus;

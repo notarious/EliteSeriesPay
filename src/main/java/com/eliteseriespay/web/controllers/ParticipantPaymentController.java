@@ -2,20 +2,24 @@ package com.eliteseriespay.web.controllers;
 
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
+import com.eliteseriespay.domain.BillingMode;
+import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.PaymentSource;
 import com.eliteseriespay.domain.PaymentStatus;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
-import com.eliteseriespay.service.ParticipantPaymentHistoryFilter;
-import com.eliteseriespay.service.PaymentFormDefaults;
+import com.eliteseriespay.payment.history.ParticipantPaymentHistoryFilter;
+import com.eliteseriespay.payment.PaymentFormDefaults;
 import com.eliteseriespay.service.ParticipantService;
 import com.eliteseriespay.service.PaymentService;
 import com.eliteseriespay.service.ProjectMembershipService;
+import com.eliteseriespay.payment.history.ProjectPaymentHistoryFilter;
 import com.eliteseriespay.service.ProjectService;
 import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.ParticipantPaymentHistoryNavigation;
+import com.eliteseriespay.web.ProjectPaymentHistoryNavigation;
 import com.eliteseriespay.web.form.PaymentForm;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -170,26 +174,51 @@ public class ParticipantPaymentController {
                            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate historyDateTo,
                            @RequestParam(value = "historyPage", defaultValue = "0") int historyPage,
                            @RequestParam(value = "historySize", defaultValue = "25") int historySize,
+                           @RequestParam(value = "projectHistoryProjectId", required = false) Long projectHistoryProjectId,
+                           @RequestParam(value = "projectHistoryParticipantId", required = false) Long projectHistoryParticipantId,
+                           @RequestParam(value = "projectHistoryBillingMode", required = false) BillingMode projectHistoryBillingMode,
+                           @RequestParam(value = "projectHistorySource", required = false) PaymentSource projectHistorySource,
+                           @RequestParam(value = "projectHistoryCurrency", required = false) PaymentCurrency projectHistoryCurrency,
+                           @RequestParam(value = "projectHistoryStatus", required = false) PaymentStatus projectHistoryStatus,
+                           @RequestParam(value = "projectHistoryDateFrom", required = false)
+                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate projectHistoryDateFrom,
+                           @RequestParam(value = "projectHistoryDateTo", required = false)
+                           @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate projectHistoryDateTo,
+                           @RequestParam(value = "projectHistoryPage", defaultValue = "0") int projectHistoryPage,
+                           @RequestParam(value = "projectHistorySize", defaultValue = "25") int projectHistorySize,
                            Model model) {
+        ProjectPaymentHistoryFilter projectHistoryFilter = resolveProjectHistoryFilter(
+                projectHistoryProjectId,
+                projectHistoryParticipantId,
+                projectHistoryBillingMode,
+                projectHistorySource,
+                projectHistoryCurrency,
+                projectHistoryStatus,
+                projectHistoryDateFrom,
+                projectHistoryDateTo,
+                projectHistoryPage,
+                projectHistorySize);
+
         List<ProjectMembership> activeMemberships =
                 projectMembershipService.findActiveByParticipantId(participantId);
         if (activeMemberships.isEmpty()) {
-            return historyRedirect(participantId, historyProjectId, historySource, historyStatus,
-                    historyDateFrom, historyDateTo, historyPage, historySize);
+            return paymentHistoryRedirect(participantId, historyProjectId, historySource, historyStatus,
+                    historyDateFrom, historyDateTo, historyPage, historySize, projectHistoryFilter);
         }
 
         Payment payment = paymentService.findById(participantId, paymentId);
 
         if (payment.getStatus() == PaymentStatus.VOIDED) {
-            return historyRedirect(participantId, historyProjectId, historySource, historyStatus,
-                    historyDateFrom, historyDateTo, historyPage, historySize);
+            return paymentHistoryRedirect(participantId, historyProjectId, historySource, historyStatus,
+                    historyDateFrom, historyDateTo, historyPage, historySize, projectHistoryFilter);
         }
 
         PaymentForm paymentForm = toPaymentForm(payment);
         ParticipantPaymentHistoryFilter historyFilter = ParticipantPaymentHistoryFilter.of(
                 historyProjectId, historySource, historyStatus,
                 historyDateFrom, historyDateTo, historyPage, historySize);
-        populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm, historyFilter);
+        populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm,
+                historyFilter, projectHistoryFilter);
         return "participants/payment-edit";
     }
 
@@ -207,15 +236,39 @@ public class ParticipantPaymentController {
                          @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate historyDateTo,
                          @RequestParam(value = "historyPage", defaultValue = "0") int historyPage,
                          @RequestParam(value = "historySize", defaultValue = "25") int historySize,
+                         @RequestParam(value = "projectHistoryProjectId", required = false) Long projectHistoryProjectId,
+                         @RequestParam(value = "projectHistoryParticipantId", required = false) Long projectHistoryParticipantId,
+                         @RequestParam(value = "projectHistoryBillingMode", required = false) BillingMode projectHistoryBillingMode,
+                         @RequestParam(value = "projectHistorySource", required = false) PaymentSource projectHistorySource,
+                         @RequestParam(value = "projectHistoryCurrency", required = false) PaymentCurrency projectHistoryCurrency,
+                         @RequestParam(value = "projectHistoryStatus", required = false) PaymentStatus projectHistoryStatus,
+                         @RequestParam(value = "projectHistoryDateFrom", required = false)
+                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate projectHistoryDateFrom,
+                         @RequestParam(value = "projectHistoryDateTo", required = false)
+                         @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate projectHistoryDateTo,
+                         @RequestParam(value = "projectHistoryPage", defaultValue = "0") int projectHistoryPage,
+                         @RequestParam(value = "projectHistorySize", defaultValue = "25") int projectHistorySize,
                          Model model) {
         List<ProjectMembership> activeMemberships =
                 projectMembershipService.findActiveByParticipantId(participantId);
         ParticipantPaymentHistoryFilter historyFilter = ParticipantPaymentHistoryFilter.of(
                 historyProjectId, historySource, historyStatus,
                 historyDateFrom, historyDateTo, historyPage, historySize);
+        ProjectPaymentHistoryFilter projectHistoryFilter = resolveProjectHistoryFilter(
+                projectHistoryProjectId,
+                projectHistoryParticipantId,
+                projectHistoryBillingMode,
+                projectHistorySource,
+                projectHistoryCurrency,
+                projectHistoryStatus,
+                projectHistoryDateFrom,
+                projectHistoryDateTo,
+                projectHistoryPage,
+                projectHistorySize);
 
         if (bindingResult.hasErrors()) {
-            populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm, historyFilter);
+            populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm,
+                    historyFilter, projectHistoryFilter);
             return "participants/payment-edit";
         }
 
@@ -232,11 +285,12 @@ public class ParticipantPaymentController {
                     paymentForm.getComment());
         } catch (ValidationException ex) {
             rejectPaymentForm(bindingResult, ex);
-            populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm, historyFilter);
+            populateEditFormModel(model, participantId, paymentId, activeMemberships, paymentForm,
+                    historyFilter, projectHistoryFilter);
             return "participants/payment-edit";
         }
 
-        return historyRedirect(participantId, historyFilter);
+        return paymentHistoryRedirect(participantId, historyFilter, projectHistoryFilter);
     }
 
     @PostMapping("/{paymentId}/void")
@@ -250,7 +304,19 @@ public class ParticipantPaymentController {
                               @RequestParam(value = "historyDateTo", required = false)
                               @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate historyDateTo,
                               @RequestParam(value = "historyPage", defaultValue = "0") int historyPage,
-                              @RequestParam(value = "historySize", defaultValue = "25") int historySize) {
+                              @RequestParam(value = "historySize", defaultValue = "25") int historySize,
+                              @RequestParam(value = "projectHistoryProjectId", required = false) Long projectHistoryProjectId,
+                              @RequestParam(value = "projectHistoryParticipantId", required = false) Long projectHistoryParticipantId,
+                              @RequestParam(value = "projectHistoryBillingMode", required = false) BillingMode projectHistoryBillingMode,
+                              @RequestParam(value = "projectHistorySource", required = false) PaymentSource projectHistorySource,
+                              @RequestParam(value = "projectHistoryCurrency", required = false) PaymentCurrency projectHistoryCurrency,
+                              @RequestParam(value = "projectHistoryStatus", required = false) PaymentStatus projectHistoryStatus,
+                              @RequestParam(value = "projectHistoryDateFrom", required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate projectHistoryDateFrom,
+                              @RequestParam(value = "projectHistoryDateTo", required = false)
+                              @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate projectHistoryDateTo,
+                              @RequestParam(value = "projectHistoryPage", defaultValue = "0") int projectHistoryPage,
+                              @RequestParam(value = "projectHistorySize", defaultValue = "25") int projectHistorySize) {
         try {
             paymentService.voidPayment(participantId, paymentId);
         } catch (ValidationException ex) {
@@ -259,8 +325,20 @@ public class ParticipantPaymentController {
             }
         }
 
-        return historyRedirect(participantId, historyProjectId, historySource, historyStatus,
-                historyDateFrom, historyDateTo, historyPage, historySize);
+        ProjectPaymentHistoryFilter projectHistoryFilter = resolveProjectHistoryFilter(
+                projectHistoryProjectId,
+                projectHistoryParticipantId,
+                projectHistoryBillingMode,
+                projectHistorySource,
+                projectHistoryCurrency,
+                projectHistoryStatus,
+                projectHistoryDateFrom,
+                projectHistoryDateTo,
+                projectHistoryPage,
+                projectHistorySize);
+
+        return paymentHistoryRedirect(participantId, historyProjectId, historySource, historyStatus,
+                historyDateFrom, historyDateTo, historyPage, historySize, projectHistoryFilter);
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -355,7 +433,8 @@ public class ParticipantPaymentController {
                                        Long paymentId,
                                        List<ProjectMembership> activeMemberships,
                                        PaymentForm paymentForm,
-                                       ParticipantPaymentHistoryFilter historyFilter) {
+                                       ParticipantPaymentHistoryFilter historyFilter,
+                                       ProjectPaymentHistoryFilter projectHistoryFilter) {
         Participant participant = participantService.findById(participantId);
         model.addAttribute("participant", participant);
         model.addAttribute("participantId", participantId);
@@ -364,25 +443,76 @@ public class ParticipantPaymentController {
         model.addAttribute("paymentForm", paymentForm);
         model.addAttribute("historyFilter", historyFilter);
         model.addAttribute("historyNavigation", ParticipantPaymentHistoryNavigation.of(participantId, historyFilter));
+        if (projectHistoryFilter != null) {
+            model.addAttribute("projectHistoryNavigation",
+                    ProjectPaymentHistoryNavigation.of(projectHistoryFilter.projectId(), projectHistoryFilter));
+        }
     }
 
-    private String historyRedirect(Long participantId, ParticipantPaymentHistoryFilter filter) {
+    private ProjectPaymentHistoryFilter resolveProjectHistoryFilter(Long projectHistoryProjectId,
+                                                                    Long projectHistoryParticipantId,
+                                                                    BillingMode projectHistoryBillingMode,
+                                                                    PaymentSource projectHistorySource,
+                                                                    PaymentCurrency projectHistoryCurrency,
+                                                                    PaymentStatus projectHistoryStatus,
+                                                                    LocalDate projectHistoryDateFrom,
+                                                                    LocalDate projectHistoryDateTo,
+                                                                    int projectHistoryPage,
+                                                                    int projectHistorySize) {
+        if (projectHistoryProjectId == null) {
+            return null;
+        }
+        return ProjectPaymentHistoryNavigation.filterFromEditParams(
+                projectHistoryProjectId,
+                projectHistoryParticipantId,
+                projectHistoryBillingMode,
+                projectHistorySource,
+                projectHistoryCurrency,
+                projectHistoryStatus,
+                projectHistoryDateFrom,
+                projectHistoryDateTo,
+                projectHistoryPage,
+                projectHistorySize);
+    }
+
+    private String paymentHistoryRedirect(Long participantId,
+                                          ParticipantPaymentHistoryFilter historyFilter,
+                                          ProjectPaymentHistoryFilter projectHistoryFilter) {
+        if (projectHistoryFilter != null) {
+            return projectHistoryRedirect(projectHistoryFilter);
+        }
+        return participantHistoryRedirect(participantId, historyFilter);
+    }
+
+    private String paymentHistoryRedirect(Long participantId,
+                                          Long historyProjectId,
+                                          PaymentSource historySource,
+                                          PaymentStatus historyStatus,
+                                          LocalDate historyDateFrom,
+                                          LocalDate historyDateTo,
+                                          int historyPage,
+                                          int historySize,
+                                          ProjectPaymentHistoryFilter projectHistoryFilter) {
+        if (projectHistoryFilter != null) {
+            return projectHistoryRedirect(projectHistoryFilter);
+        }
+        return participantHistoryRedirect(participantId, ParticipantPaymentHistoryFilter.of(
+                historyProjectId, historySource, historyStatus,
+                historyDateFrom, historyDateTo, historyPage, historySize));
+    }
+
+    private String projectHistoryRedirect(ProjectPaymentHistoryFilter filter) {
+        UriComponentsBuilder builder = UriComponentsBuilder
+                .fromPath("/projects/" + filter.projectId() + "/payments");
+        ProjectPaymentHistoryNavigation.appendListQuery(builder, filter);
+        return "redirect:" + builder.build().toUriString();
+    }
+
+    private String participantHistoryRedirect(Long participantId, ParticipantPaymentHistoryFilter filter) {
         UriComponentsBuilder builder = UriComponentsBuilder
                 .fromPath("/participants/" + participantId + "/payments");
         ParticipantPaymentHistoryNavigation.appendListQuery(builder, filter);
         return "redirect:" + builder.build().toUriString();
-    }
-
-    private String historyRedirect(Long participantId,
-                                   Long projectId,
-                                   PaymentSource source,
-                                   PaymentStatus status,
-                                   LocalDate dateFrom,
-                                   LocalDate dateTo,
-                                   int page,
-                                   int size) {
-        return historyRedirect(participantId, ParticipantPaymentHistoryFilter.of(
-                projectId, source, status, dateFrom, dateTo, page, size));
     }
 
     private PaymentForm toPaymentForm(Payment payment) {

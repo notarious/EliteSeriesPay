@@ -1,4 +1,4 @@
-package com.eliteseriespay.service;
+package com.eliteseriespay.membership;
 
 import com.eliteseriespay.domain.ProjectMembership;
 

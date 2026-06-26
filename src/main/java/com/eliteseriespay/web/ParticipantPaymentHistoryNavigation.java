@@ -1,6 +1,6 @@
 package com.eliteseriespay.web;
 
-import com.eliteseriespay.service.ParticipantPaymentHistoryFilter;
+import com.eliteseriespay.payment.history.ParticipantPaymentHistoryFilter;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.web.util.UriComponentsBuilder;
