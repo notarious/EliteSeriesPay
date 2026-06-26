@@ -2,6 +2,7 @@ package com.eliteseriespay.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.eliteseriespay.config.ApplicationDataDirectory;
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.Payment;
 import com.eliteseriespay.domain.PaymentCurrency;
@@ -11,16 +12,21 @@ import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.domain.MembershipStatus;
 import com.eliteseriespay.domain.ApplicationSettings;
 import com.eliteseriespay.domain.BillingMode;
+import com.zaxxer.hikari.HikariDataSource;
+import jakarta.persistence.EntityManagerFactory;
 import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import javax.sql.DataSource;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestPropertySource;
@@ -31,6 +37,7 @@ import com.eliteseriespay.repository.ProjectMembershipRepository;
 import com.eliteseriespay.repository.ProjectRepository;
 
 @SpringBootTest
+@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 @TestPropertySource(properties = {
         "eliteseriespay.database-backup.startup-enabled=false"
 })
@@ -46,8 +53,7 @@ class ApplicationResetServiceTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         databasePath = tempDir.resolve("application-reset-test.db");
         backupDirectory = tempDir.resolve("backups");
-        registry.add("spring.datasource.url",
-                () -> "jdbc:sqlite:file:" + databasePath + "?busy_timeout=5000");
+        registry.add("spring.datasource.url", () -> ApplicationDataDirectory.toJdbcSqliteFileUrl(databasePath));
         registry.add("eliteseriespay.database-backup.database-path", () -> databasePath.toString());
         registry.add("eliteseriespay.database-backup.backup-directory", () -> backupDirectory.toString());
     }
@@ -72,6 +78,17 @@ class ApplicationResetServiceTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    @AfterAll
+    static void releaseDatabaseResources(
+            @Autowired EntityManagerFactory entityManagerFactory, @Autowired DataSource dataSource) {
+        if (entityManagerFactory != null && entityManagerFactory.isOpen()) {
+            entityManagerFactory.close();
+        }
+        if (dataSource instanceof HikariDataSource hikariDataSource) {
+            hikariDataSource.close();
+        }
+    }
 
     @BeforeEach
     void seedData() throws Exception {
