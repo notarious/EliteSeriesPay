@@ -60,11 +60,11 @@ class ApplicationDataDirectoryTest {
 
     @Test
     void toJdbcSqliteFileUrl_usesAbsolutePath() {
-        Path databaseFile = Path.of("/Users/test/AppData/Local/EliteSeriesPay/eliteseriespay.db");
+        Path databaseFile = Path.of("data-dir", "eliteseriespay.db");
+        String normalizedPath = databaseFile.toAbsolutePath().normalize().toString().replace('\\', '/');
 
         assertThat(ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile))
-                .isEqualTo(
-                        "jdbc:sqlite:file:/Users/test/AppData/Local/EliteSeriesPay/eliteseriespay.db?busy_timeout=5000");
+                .isEqualTo("jdbc:sqlite:file:" + normalizedPath + "?busy_timeout=5000");
     }
 
     @Test
