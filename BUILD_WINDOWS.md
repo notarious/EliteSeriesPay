@@ -5,7 +5,8 @@ This guide describes how to build a Windows MSI installer for EliteSeriesPay usi
 The installer:
 
 - bundles a Java 21 runtime (end users do not need Java installed)
-- installs the application to `Program Files`
+- installs per-user without Administrator privileges (`--win-per-user-install`)
+- installs application files to `%LOCALAPPDATA%\EliteSeriesPay\` (alongside user data files)
 - creates a Start Menu shortcut
 - optionally creates a Desktop shortcut
 - stores user data in `%LOCALAPPDATA%\EliteSeriesPay`
@@ -16,7 +17,13 @@ User data layout:
 %LOCALAPPDATA%\EliteSeriesPay\
   eliteseriespay.db
   backups\
+  eliteseriespay.instance.lock
+  logs\
+    startup.log
+    application.log
 ```
+
+The install directory under `%LOCALAPPDATA%\Programs\` is treated as read-only application content. The app never writes the database, backups, lock file, or logs there.
 
 The SQLite database is created automatically on first launch.
 
@@ -40,6 +47,10 @@ candle -?
 ```
 
 ## Build command
+
+Before building a **release** MSI, increase the version in `pom.xml` (for example from `0.0.1-SNAPSHOT` to `0.0.2-SNAPSHOT`). The build script strips the `-SNAPSHOT` suffix and passes the result to `jpackage` as `--app-version`.
+
+Each new release MSI must have a **higher** app version than the installed one so Windows treats it as an upgrade.
 
 From the project root:
 
@@ -68,8 +79,37 @@ The script:
 1. runs `mvn package`
 2. verifies the Spring Boot executable JAR (`Main-Class: org.springframework.boot.loader.launch.JarLauncher`)
 3. copies only the executable JAR into `target\jpackage-input`
-4. invokes `jpackage` to create an MSI with a bundled runtime
-5. passes `-Deliteseriespay.packaged=true` so the app stores data under `%LOCALAPPDATA%\EliteSeriesPay`
+4. invokes `jpackage --type msi` to create an MSI with a bundled runtime
+5. passes `-Deliteseriespay.packaged=true` and `-Djava.awt.headless=false` for packaged desktop behavior (system tray, browser launch)
+6. uses a fixed `--win-upgrade-uuid` so a newer MSI replaces the previous install
+
+## Upgrading an existing installation
+
+Newer MSI installers use a stable Windows upgrade UUID. When you run a newer `EliteSeriesPay-<version>.msi`, Windows should offer to upgrade the existing installation instead of reporting that another version is already installed.
+
+User data is **not** stored in the install directory and is **not** removed during upgrade or uninstall:
+
+```
+%LOCALAPPDATA%\EliteSeriesPay\
+  eliteseriespay.db
+  backups\
+  logs\
+```
+
+The instance lock file is temporary and is recreated on the next launch.
+
+### Update procedure
+
+1. Exit EliteSeriesPay from the tray menu: **Выход**
+2. Run the new MSI (`EliteSeriesPay-<version>.msi`)
+3. Follow the installer prompts to upgrade
+4. Launch EliteSeriesPay from the Start Menu
+
+If the application is still running, the installer may fail to replace files in `%LOCALAPPDATA%\EliteSeriesPay\`.
+
+### One-time note for older builds
+
+MSI packages built before the fixed upgrade UUID was introduced may still require a one-time manual uninstall. After that, future updates should install over the existing version.
 
 ## Resulting MSI
 
@@ -82,15 +122,25 @@ target\dist\EliteSeriesPay-<version>.msi
 Example:
 
 ```
-target\dist\EliteSeriesPay-0.0.1.msi
+target\dist\EliteSeriesPay-0.0.2.msi
 ```
 
 After installation:
 
-- application files: `C:\Program Files\EliteSeriesPay\`
+- application files: `%LOCALAPPDATA%\EliteSeriesPay\`
+- launcher config: `%LOCALAPPDATA%\EliteSeriesPay\app\EliteSeriesPay.cfg`
 - Start Menu shortcut: `EliteSeriesPay`
 - Desktop shortcut: created by default (disable with `-SkipDesktopShortcut`)
 - user data: `%LOCALAPPDATA%\EliteSeriesPay\`
+
+The installed `EliteSeriesPay.cfg` must contain:
+
+```
+java-options=-Deliteseriespay.packaged=true
+java-options=-Djava.awt.headless=false
+```
+
+On first launch, inspect `%LOCALAPPDATA%\EliteSeriesPay\logs\startup.log` to verify resolved paths.
 
 Launch the installed application and open:
 
@@ -108,3 +158,22 @@ When running from Maven (`mvn spring-boot:run`), the database and backups remain
 ```
 
 The `%LOCALAPPDATA%` location is used only by the packaged Windows installer.
+
+## Troubleshooting with app-image
+
+If MSI creation fails (for example, WiX is missing or misconfigured), you can verify the launcher separately by building an **app-image** instead of an MSI.
+
+Temporarily change `--type msi` to `--type app-image` in `packaging\windows\build-windows-msi.ps1` and remove the MSI-only options (`--install-dir`, `--win-menu`, `--win-menu-group`, `--win-shortcut`). Keep the launcher options:
+
+- `--main-jar`
+- `--main-class`
+- `--java-options -Deliteseriespay.packaged=true`
+- `--java-options -Djava.awt.headless=false`
+
+The unpacked executable is written to:
+
+```
+target\dist\EliteSeriesPay\EliteSeriesPay.exe
+```
+
+Use this flow to test startup, tray, single-instance behavior, and backups before restoring MSI packaging.

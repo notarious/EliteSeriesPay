@@ -31,8 +31,11 @@ class ApplicationDataDirectoryEnvironmentPostProcessorTest {
                 .isEqualTo(expectedDatabase.toString());
         assertThat(environment.getProperty("eliteseriespay.database-backup.backup-directory"))
                 .isEqualTo(expectedBackups.toString());
+        assertThat(environment.getProperty("logging.file.name"))
+                .isEqualTo(tempDir.resolve("logs").resolve("application.log").toString());
         assertThat(Files.isDirectory(tempDir)).isTrue();
         assertThat(Files.isDirectory(expectedBackups)).isTrue();
+        assertThat(Files.isDirectory(tempDir.resolve("logs"))).isTrue();
     }
 
     @Test
@@ -54,8 +57,11 @@ class ApplicationDataDirectoryEnvironmentPostProcessorTest {
 
             assertThat(environment.getProperty("spring.datasource.url"))
                     .isEqualTo(ApplicationDataDirectory.toJdbcSqliteFileUrl(expectedDatabase));
+            assertThat(environment.getProperty("logging.file.name"))
+                    .isEqualTo(expectedDataDirectory.resolve("logs").resolve("application.log").toString());
             assertThat(Files.isDirectory(expectedDataDirectory)).isTrue();
             assertThat(Files.isDirectory(expectedBackups)).isTrue();
+            assertThat(Files.isDirectory(expectedDataDirectory.resolve("logs"))).isTrue();
         } finally {
             if (originalOsName == null) {
                 System.clearProperty("os.name");

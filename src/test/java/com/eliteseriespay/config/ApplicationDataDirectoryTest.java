@@ -3,8 +3,11 @@ package com.eliteseriespay.config;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import java.net.URI;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.EnabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.springframework.mock.env.MockEnvironment;
 
 class ApplicationDataDirectoryTest {
@@ -128,5 +131,58 @@ class ApplicationDataDirectoryTest {
                 .isEqualTo(dataDirectory.resolve("eliteseriespay.db"));
         assertThat(ApplicationDataDirectory.backupsDirectory(dataDirectory))
                 .isEqualTo(dataDirectory.resolve("backups"));
+        assertThat(ApplicationDataDirectory.logsDirectory(dataDirectory))
+                .isEqualTo(dataDirectory.resolve("logs"));
+    }
+
+    @Test
+    void isJPackageApplicationLayout_detectsJarInsideAppDirectory() {
+        Path jarPath = Path.of("C:\\Program Files\\EliteSeriesPay\\app\\eliteseriespay.jar");
+
+        assertThat(ApplicationDataDirectory.isJPackageApplicationLayout(jarPath)).isTrue();
+    }
+
+    @Test
+    void toJarPath_extractsJarFileFromSpringBootCodeSourceUri() throws Exception {
+        URI codeSource = URI.create(
+                "jar:file:/C:/Program%20Files/EliteSeriesPay/app/eliteseriespay-0.0.1-SNAPSHOT.jar!/BOOT-INF/classes!/");
+
+        assertThat(ApplicationDataDirectory.isJPackageApplicationLayout(ApplicationDataDirectory.toJarPathForTest(codeSource)))
+                .isTrue();
+    }
+
+    @Test
+    void isJPackageApplicationLayout_ignoresDevelopmentJarLocation() {
+        Path jarPath = Path.of("D:\\project\\target\\eliteseriespay.jar");
+
+        assertThat(ApplicationDataDirectory.isJPackageApplicationLayout(jarPath)).isFalse();
+    }
+
+    @Test
+    @EnabledOnOs(OS.WINDOWS)
+    void resolvePreSpring_usesLocalAppDataWhenPackagedPropertySet() {
+        String originalValue = System.getProperty(ApplicationDataDirectory.PACKAGED_PROPERTY);
+        try {
+            System.setProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, "true");
+
+            Path dataDirectory = ApplicationDataDirectory.resolvePreSpring();
+
+            assertThat(dataDirectory.getFileName().toString()).isEqualTo("EliteSeriesPay");
+            assertThat(dataDirectory.getParent()).isEqualTo(Path.of(System.getenv("LOCALAPPDATA")));
+        } finally {
+            restoreSystemProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, originalValue);
+        }
+    }
+
+    @Test
+    void ensurePackagedModeInitialized_setsPackagedPropertyOnWindowsWhenPackaged() {
+        String originalValue = System.getProperty(ApplicationDataDirectory.PACKAGED_PROPERTY);
+        try {
+            System.setProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, "true");
+            ApplicationDataDirectory.ensurePackagedModeInitialized();
+            assertThat(System.getProperty(ApplicationDataDirectory.PACKAGED_PROPERTY)).isEqualTo("true");
+        } finally {
+            restoreSystemProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, originalValue);
+        }
     }
 }

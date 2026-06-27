@@ -27,11 +27,13 @@ public class ApplicationDataDirectoryEnvironmentPostProcessor implements Environ
         Path dataDirectory = ApplicationDataDirectory.resolve(environment);
         Path databaseFile = ApplicationDataDirectory.databasePath(dataDirectory);
         Path backupsDirectory = ApplicationDataDirectory.backupsDirectory(dataDirectory);
+        Path logsDirectory = ApplicationDataDirectory.logsDirectory(dataDirectory);
         String jdbcUrl = ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile);
 
         try {
             Files.createDirectories(dataDirectory);
             Files.createDirectories(backupsDirectory);
+            Files.createDirectories(logsDirectory);
         } catch (IOException exception) {
             throw new IllegalStateException(
                     "Failed to create application data directory: " + dataDirectory, exception);
@@ -41,11 +43,13 @@ public class ApplicationDataDirectoryEnvironmentPostProcessor implements Environ
         properties.put("spring.datasource.url", jdbcUrl);
         properties.put("eliteseriespay.database-backup.database-path", databaseFile.toString());
         properties.put("eliteseriespay.database-backup.backup-directory", backupsDirectory.toString());
+        properties.put("logging.file.name", logsDirectory.resolve("application.log").toString());
 
         environment
                 .getPropertySources()
                 .addFirst(new MapPropertySource(PROPERTY_SOURCE_NAME, properties));
 
+        PackagedStartupDiagnostics.logResolvedPaths(environment, dataDirectory, databaseFile, backupsDirectory, jdbcUrl);
         application.addListeners(logResolvedPaths(dataDirectory, databaseFile, backupsDirectory, jdbcUrl));
     }
 
@@ -57,6 +61,7 @@ public class ApplicationDataDirectoryEnvironmentPostProcessor implements Environ
             logger.info("Database path: {}", databaseFile.toAbsolutePath().normalize());
             logger.info("JDBC URL: {}", jdbcUrl);
             logger.info("Backups directory: {}", backupsDirectory.toAbsolutePath().normalize());
+            logger.info("Logs directory: {}", ApplicationDataDirectory.logsDirectory(dataDirectory).toAbsolutePath().normalize());
         };
     }
 }

@@ -1,5 +1,6 @@
 package com.eliteseriespay;
 
+import com.eliteseriespay.config.ApplicationDataDirectory;
 import com.eliteseriespay.desktop.DesktopEnvironment;
 import com.eliteseriespay.desktop.DesktopSupport;
 import com.eliteseriespay.desktop.SingleInstanceLock;
@@ -17,6 +18,9 @@ public class EliteSeriesPayApplication {
     private static SingleInstanceLock instanceLock;
 
     public static void main(String[] args) {
+        ApplicationDataDirectory.ensurePackagedModeInitialized();
+        ApplicationDataDirectory.logPackagedStartupPreSpring();
+
         if (DesktopEnvironment.isSingleInstanceEnabledPreSpring()) {
             instanceLock = SingleInstanceLock.forDataDirectory(DesktopEnvironment.resolveDataDirectoryPreSpring());
             try {

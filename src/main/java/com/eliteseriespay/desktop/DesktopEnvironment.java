@@ -27,12 +27,12 @@ public final class DesktopEnvironment {
     }
 
     public static boolean isSingleInstanceEnabledPreSpring() {
-        return ApplicationDataDirectory.isPackaged(preSpringEnvironment())
+        return ApplicationDataDirectory.isPackagedPreSpring()
                 && ApplicationDataDirectory.isWindows();
     }
 
     public static Path resolveDataDirectoryPreSpring() {
-        return ApplicationDataDirectory.resolve(preSpringEnvironment());
+        return ApplicationDataDirectory.resolvePreSpring();
     }
 
     public static String applicationUrl(Environment environment) {
@@ -49,25 +49,10 @@ public final class DesktopEnvironment {
                 && ApplicationDataDirectory.isWindows();
     }
 
-    private static ConfigurableEnvironment preSpringEnvironment() {
-        return new PreSpringEnvironment();
-    }
-
     private static ConfigurableEnvironment asConfigurable(Environment environment) {
         if (environment instanceof ConfigurableEnvironment configurableEnvironment) {
             return configurableEnvironment;
         }
         throw new IllegalStateException("Expected ConfigurableEnvironment");
-    }
-
-    private static final class PreSpringEnvironment extends org.springframework.core.env.StandardEnvironment {
-
-        private static final String PACKAGED_PROPERTY = "eliteseriespay.packaged";
-
-        PreSpringEnvironment() {
-            if (Boolean.parseBoolean(System.getProperty(PACKAGED_PROPERTY, "false"))) {
-                getSystemProperties().put(PACKAGED_PROPERTY, "true");
-            }
-        }
     }
 }
