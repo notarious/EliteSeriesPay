@@ -173,6 +173,34 @@ main.container {
     vertical-align: middle;
 }
 
+.app-table-payment-history tbody td {
+    vertical-align: middle;
+}
+
+.app-table-payment-history .payment-history-comment,
+.app-table-payment-history .payment-history-comment-col {
+    max-width: 16rem;
+    white-space: normal;
+    overflow-wrap: break-word;
+    word-break: break-word;
+}
+
+.app-table-payment-history .payment-history-status,
+.app-table-payment-history .payment-history-status-col {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.app-table-payment-history .payment-history-actions,
+.app-table-payment-history .payment-history-actions-col {
+    white-space: nowrap;
+    width: 1%;
+}
+
+.app-table-payment-history .payment-history-actions .d-inline-flex {
+    align-items: center;
+}
+
 .app-table.table-hover tbody tr:hover {
     background-color: rgba(37, 99, 235, 0.04);
 }

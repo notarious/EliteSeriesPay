@@ -121,7 +121,7 @@
             </div>
         </div>
 
-        <div class="table-responsive app-table">
+        <div class="table-responsive app-table app-table-payment-history">
             <table class="table table-hover align-middle mb-0">
                 <thead>
                 <tr>
@@ -134,9 +134,9 @@
                     <th scope="col" class="text-end">Курс</th>
                     <th scope="col" class="text-end">Сумма в ₽</th>
                     <th scope="col" class="text-end">Чистыми ₽</th>
-                    <th scope="col">Статус</th>
-                    <th scope="col">Комментарий</th>
-                    <th scope="col" class="text-end">Действия</th>
+                    <th scope="col" class="payment-history-status-col">Статус</th>
+                    <th scope="col" class="payment-history-comment-col">Комментарий</th>
+                    <th scope="col" class="text-end payment-history-actions-col">Действия</th>
                 </tr>
                 </thead>
                 <tbody>
@@ -154,10 +154,13 @@
                     <td class="text-end" th:text="${row.exchangeRate}">1,0000</td>
                     <td class="text-end" th:text="${row.amountRub}">100,00 ₽</td>
                     <td class="text-end" th:text="${row.netAmountRub}">90,00 ₽</td>
-                    <td th:replace="~{fragments/payment-status-badge :: badgeFromVoided(${row.voided}, ${row.statusLabel})}">Активен</td>
-                    <td th:text="${row.comment != null ? row.comment : '—'}">—</td>
-                    <td class="text-end">
-                        <div th:if="${row.editable}" class="d-inline-flex gap-1">
+                    <td class="payment-history-status">
+                        <th:block th:replace="~{fragments/payment-status-badge :: badgeFromVoided(${row.voided}, ${row.statusLabel})}">Активен</th:block>
+                    </td>
+                    <td class="payment-history-comment"
+                        th:text="${row.comment != null ? row.comment : '—'}">—</td>
+                    <td class="text-end payment-history-actions">
+                        <div th:if="${row.editable}" class="d-inline-flex gap-1 align-items-center">
                             <a class="btn btn-sm btn-outline-primary"
                                th:href="${historyNavigation.editUrl(row.participantId, row.paymentId)}"
                                data-bs-toggle="tooltip" data-bs-title="Изменить"
