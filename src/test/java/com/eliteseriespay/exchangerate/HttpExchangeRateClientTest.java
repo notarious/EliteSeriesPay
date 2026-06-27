@@ -15,8 +15,12 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 class HttpExchangeRateClientTest {
+
+    private static final String CBR_API_URL = "https://www.cbr-xml-daily.ru/daily_json.js";
+    private static final MediaType CBR_MEDIA_TYPE = MediaType.parseMediaType("application/javascript;charset=utf-8");
 
     private ExchangeRateProperties properties;
     private MockRestServiceServer server;
@@ -25,44 +29,57 @@ class HttpExchangeRateClientTest {
     @BeforeEach
     void setUp() {
         properties = new ExchangeRateProperties();
-        properties.setApiUrl("https://api.example.test/latest");
+        properties.setApiUrl(CBR_API_URL);
 
         RestClient.Builder builder = RestClient.builder();
         server = MockRestServiceServer.bindTo(builder).build();
-        client = new HttpExchangeRateClient(builder, properties);
+        client = new HttpExchangeRateClient(builder, properties, new ObjectMapper());
     }
 
     @Test
     void fetchRateToRub_returnsUsdRate() {
-        server.expect(requestTo("https://api.example.test/latest?from=USD&to=RUB"))
+        server.expect(requestTo(CBR_API_URL))
                 .andRespond(withSuccess("""
-                        {"amount":1.0,"base":"USD","date":"2026-06-26","rates":{"RUB":90.5}}
-                        """, MediaType.APPLICATION_JSON));
+                        {"Valute":{"USD":{"Nominal":1,"Value":77.0611}}}
+                        """, CBR_MEDIA_TYPE));
 
         ExchangeRateQuote quote = client.fetchRateToRub(PaymentCurrency.USD);
 
         assertThat(quote.currency()).isEqualTo(PaymentCurrency.USD);
-        assertThat(quote.rate()).isEqualByComparingTo("90.5");
+        assertThat(quote.rate()).isEqualByComparingTo("77.0611");
         server.verify();
     }
 
     @Test
     void fetchRateToRub_returnsEurRate() {
-        server.expect(requestTo("https://api.example.test/latest?from=EUR&to=RUB"))
+        server.expect(requestTo(CBR_API_URL))
                 .andRespond(withSuccess("""
-                        {"amount":1.0,"base":"EUR","date":"2026-06-26","rates":{"RUB":98.12}}
-                        """, MediaType.APPLICATION_JSON));
+                        {"Valute":{"EUR":{"Nominal":1,"Value":87.4027}}}
+                        """, CBR_MEDIA_TYPE));
 
         ExchangeRateQuote quote = client.fetchRateToRub(PaymentCurrency.EUR);
 
         assertThat(quote.currency()).isEqualTo(PaymentCurrency.EUR);
-        assertThat(quote.rate()).isEqualByComparingTo("98.12");
+        assertThat(quote.rate()).isEqualByComparingTo("87.4027");
+        server.verify();
+    }
+
+    @Test
+    void fetchRateToRub_normalizesNominal() {
+        server.expect(requestTo(CBR_API_URL))
+                .andRespond(withSuccess("""
+                        {"Valute":{"USD":{"Nominal":10,"Value":770.611}}}
+                        """, CBR_MEDIA_TYPE));
+
+        ExchangeRateQuote quote = client.fetchRateToRub(PaymentCurrency.USD);
+
+        assertThat(quote.rate()).isEqualByComparingTo("77.0611");
         server.verify();
     }
 
     @Test
     void fetchRateToRub_rejectsInvalidResponse() {
-        server.expect(requestTo("https://api.example.test/latest?from=USD&to=RUB"))
+        server.expect(requestTo(CBR_API_URL))
                 .andRespond(withSuccess("{}", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> client.fetchRateToRub(PaymentCurrency.USD))
@@ -73,7 +90,7 @@ class HttpExchangeRateClientTest {
 
     @Test
     void fetchRateToRub_wrapsTimeoutAsFetchFailure() {
-        server.expect(requestTo("https://api.example.test/latest?from=USD&to=RUB"))
+        server.expect(requestTo(CBR_API_URL))
                 .andRespond(withException(new IOException(new SocketTimeoutException("timeout"))));
 
         assertThatThrownBy(() -> client.fetchRateToRub(PaymentCurrency.USD))

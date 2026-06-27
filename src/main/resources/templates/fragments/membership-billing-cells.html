@@ -8,6 +8,11 @@
               th:text="${#temporals.format(row.paidUntilMonth.atDay(1), 'MM.yyyy')}">06.2026</span>
     </td>
     <td>
+        <span th:if="${row.currentMonthPayment != null}"
+              th:class="${row.currentMonthPayment.cssClass}"
+              th:text="${row.currentMonthPayment.label}">✅ Оплачено</span>
+    </td>
+    <td>
         <span th:if="${row.statusCssClass != null and !#strings.isEmpty(row.statusCssClass)}"
               th:class="${row.statusCssClass}"
               th:text="${row.paymentStatusLabel}">Активен</span>

@@ -61,6 +61,25 @@ public class MembershipBillingCalculator {
         return paidUntilMonth != null && paidUntilMonth.compareTo(currentMonth) >= 0;
     }
 
+    public CurrentMonthPaymentStatus resolveCurrentMonthPaymentStatus(YearMonth paidUntilMonth,
+                                                                      YearMonth currentMonth) {
+        if (hasActivePaidUntilMonth(paidUntilMonth, currentMonth)) {
+            return CurrentMonthPaymentStatus.PAID;
+        }
+        if (paidUntilMonth != null && paidUntilMonth.equals(currentMonth.minusMonths(1))) {
+            return CurrentMonthPaymentStatus.NOT_PAID;
+        }
+        return CurrentMonthPaymentStatus.DEBT;
+    }
+
+    public BigDecimal resolveOutstandingRenewalAmount(Project project,
+                                                      BigDecimal partialAmount,
+                                                      PaymentCurrency partialCurrency) {
+        return resolvePartialPaymentInfo(project, partialAmount, partialCurrency)
+                .map(PartialPaymentInfo::remainingUntilRenewal)
+                .orElse(project.getMonthlyFeeRub());
+    }
+
     public SubscriptionPaymentStatus resolveSubscriptionStatus(YearMonth paidUntilMonth, YearMonth currentMonth) {
         if (paidUntilMonth == null) {
             return SubscriptionPaymentStatus.NO_PAYMENTS;

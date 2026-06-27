@@ -13,6 +13,7 @@ import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.domain.SubscriptionPaymentStatus;
 import com.eliteseriespay.repository.PaymentRepository;
 import com.eliteseriespay.repository.ProjectMembershipRepository;
+import com.eliteseriespay.report.ReportFormatter;
 import com.eliteseriespay.support.TestEntities;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -44,7 +45,7 @@ class MembershipBillingServiceTest {
     void setUp() {
         calculator = new MembershipBillingCalculator();
         membershipBillingService = new MembershipBillingService(
-                projectMembershipRepository, paymentRepository, calculator);
+                projectMembershipRepository, paymentRepository, calculator, new ReportFormatter());
         project = TestEntities.project(1L, "Series", new BigDecimal("1000.00"),
                 new BigDecimal("500.00"), new BigDecimal("5.00"));
         participant = TestEntities.participant(10L, "12345", "Ivan", null);
@@ -197,5 +198,53 @@ class MembershipBillingServiceTest {
         assertThat(views.getFirst().overdue()).isTrue();
         assertThat(views.getFirst().paymentStatusLabel()).isEqualTo("Просрочен");
         assertThat(views.getFirst().paidUntilMonth()).isEqualTo(CURRENT_MONTH.minusMonths(2));
+    }
+
+    @Test
+    void buildProjectParticipantViews_showsCurrentMonthPaymentStatuses() {
+        ProjectMembership paid = TestEntities.membership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        paid.updateBilling(CURRENT_MONTH, null, null);
+
+        Participant notPaidParticipant = TestEntities.participant(11L, "11111", "Petr", null);
+        ProjectMembership notPaid = TestEntities.membership(
+                project, notPaidParticipant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        notPaid.updateBilling(CURRENT_MONTH.minusMonths(1), null, null);
+
+        Participant debtParticipant = TestEntities.participant(12L, "22222", "Alex", null);
+        ProjectMembership debt = TestEntities.membership(
+                project, debtParticipant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        debt.updateBilling(CURRENT_MONTH.minusMonths(2), null, null);
+
+        List<ProjectParticipantBillingView> views = membershipBillingService.buildProjectParticipantViews(
+                List.of(paid, notPaid, debt),
+                BillingModeFilter.ALL,
+                MembershipPaymentStatusFilter.ALL,
+                CURRENT_MONTH);
+
+        assertThat(views.get(0).currentMonthPayment().label()).isEqualTo("✅ Оплачено");
+        assertThat(views.get(1).currentMonthPayment().label()).isEqualTo("🕒 Не оплачено");
+        assertThat(views.get(2).currentMonthPayment().label()).isEqualTo("❌ Долг 500,00 ₽");
+    }
+
+    @Test
+    void buildProjectParticipantViews_showsDebtWithPartialPaymentRemainder() {
+        ProjectMembership membership = TestEntities.membership(
+                project, participant, MembershipStatus.ACTIVE, BillingMode.SUBSCRIPTION);
+        membership.updateBilling(null, new BigDecimal("100.00"), PaymentCurrency.RUB);
+
+        List<ProjectParticipantBillingView> views = membershipBillingService.buildProjectParticipantViews(
+                List.of(membership),
+                BillingModeFilter.ALL,
+                MembershipPaymentStatusFilter.ALL,
+                CURRENT_MONTH);
+
+        assertThat(views.getFirst().currentMonthPayment().label()).isEqualTo("❌ Долг 400,00 ₽");
+    }
+
+    @Test
+    void currentMonthPaymentColumnTitle_usesRussianMonthName() {
+        assertThat(membershipBillingService.currentMonthPaymentColumnTitle(YearMonth.of(2026, 7)))
+                .isEqualTo("Оплата за июль");
     }
 }

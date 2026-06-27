@@ -33,6 +33,7 @@ server:
 logging:
   level:
     root: INFO
+    com.eliteseriespay: DEBUG
 
 eliteseriespay:
   desktop:
@@ -43,7 +44,6 @@ eliteseriespay:
     retention-limit: 20
     startup-enabled: true
   exchange-rate:
-    api-url: https://api.frankfurter.app/latest
+    api-url: https://www.cbr-xml-daily.ru/daily_json.js
     connect-timeout: 5s
     read-timeout: 5s
-    com.eliteseriespay: DEBUG

@@ -23,11 +23,24 @@ public class ReportFormatter {
         return Character.toUpperCase(label.charAt(0)) + label.substring(1);
     }
 
+    public String formatCurrentMonthPaymentColumnTitle(YearMonth month) {
+        String monthName = month.atDay(1).format(
+                DateTimeFormatter.ofPattern("LLLL", Locale.forLanguageTag("ru")));
+        return "Оплата за " + monthName;
+    }
+
     public String formatRub(BigDecimal amount) {
         if (amount == null) {
             return "—";
         }
         return formatDecimal(amount) + " ₽";
+    }
+
+    public String formatEur(BigDecimal amount) {
+        if (amount == null) {
+            return "—";
+        }
+        return formatDecimal(amount) + " €";
     }
 
     public String formatCount(long count) {

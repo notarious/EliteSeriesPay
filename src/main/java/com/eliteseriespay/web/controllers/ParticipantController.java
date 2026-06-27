@@ -100,12 +100,15 @@ public class ParticipantController {
     public String show(@PathVariable Long id, Model model) {
         Participant participant = participantService.findById(id);
         var activeMemberships = projectMembershipService.findActiveByParticipantId(id);
+        YearMonth currentMonth = YearMonth.now();
         var membershipBillingViews = membershipBillingService.buildParticipantMembershipViews(
-                activeMemberships, YearMonth.now());
+                activeMemberships, currentMonth);
 
         model.addAttribute("participant", participant);
         model.addAttribute("activeMemberships", activeMemberships);
         model.addAttribute("membershipBillingViews", membershipBillingViews);
+        model.addAttribute("currentMonthPaymentColumnTitle",
+                membershipBillingService.currentMonthPaymentColumnTitle(currentMonth));
         model.addAttribute("leftMemberships", projectMembershipService.findLeftByParticipantId(id));
         model.addAttribute("paymentSummary", paymentService.getParticipantPaymentSummary(id));
         return "participants/show";

@@ -32,6 +32,7 @@ import com.eliteseriespay.repository.ParticipantRepository;
 import com.eliteseriespay.repository.PaymentRepository;
 import com.eliteseriespay.repository.ProjectMembershipRepository;
 import com.eliteseriespay.repository.ProjectRepository;
+import com.eliteseriespay.report.ReportFormatter;
 import com.eliteseriespay.support.TestEntities;
 import com.eliteseriespay.validation.ValidationError;
 import java.math.BigDecimal;
@@ -91,7 +92,8 @@ class PaymentServiceTest {
         ApplicationSettingsService applicationSettingsService =
                 new ApplicationSettingsService(applicationSettingsRepository);
         membershipBillingService = new MembershipBillingService(
-                projectMembershipRepository, paymentRepository, new MembershipBillingCalculator());
+                projectMembershipRepository, paymentRepository, new MembershipBillingCalculator(),
+                new ReportFormatter());
         paymentService = new PaymentService(
                 paymentRepository, participantService, projectService, projectMembershipService,
                 new PaymentCalculator(), applicationSettingsService, membershipBillingService);

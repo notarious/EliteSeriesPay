@@ -86,15 +86,18 @@ public class ProjectController {
                        @RequestParam(required = false) MembershipPaymentStatusFilter paymentStatus,
                        Model model) {
         Project project = projectService.findById(id);
+        YearMonth currentMonth = YearMonth.now();
         var memberships = projectMembershipService.findActiveByProjectId(id);
         var participants = membershipBillingService.buildProjectParticipantViews(
                 memberships,
                 BillingModeFilter.of(billingMode),
                 paymentStatus != null ? paymentStatus : MembershipPaymentStatusFilter.ALL,
-                YearMonth.now());
+                currentMonth);
 
         model.addAttribute("project", project);
         model.addAttribute("participants", participants);
+        model.addAttribute("currentMonthPaymentColumnTitle",
+                membershipBillingService.currentMonthPaymentColumnTitle(currentMonth));
         model.addAttribute("selectedBillingMode", billingMode);
         model.addAttribute("selectedPaymentStatus", paymentStatus);
         model.addAttribute("billingModes", BillingMode.values());

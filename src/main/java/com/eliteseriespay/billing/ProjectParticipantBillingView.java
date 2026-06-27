@@ -12,12 +12,14 @@ public record ProjectParticipantBillingView(Participant participant,
                                             SubscriptionPaymentStatus subscriptionPaymentStatus,
                                             String paymentStatusLabel,
                                             String statusCssClass,
-                                            PartialPaymentInfo partialPaymentInfo) {
+                                            PartialPaymentInfo partialPaymentInfo,
+                                            CurrentMonthPaymentInfo currentMonthPayment) {
 
     public static ProjectParticipantBillingView forSubscription(Participant participant,
                                                                 YearMonth paidUntilMonth,
                                                                 SubscriptionPaymentStatus status,
-                                                                PartialPaymentInfo partialPaymentInfo) {
+                                                                PartialPaymentInfo partialPaymentInfo,
+                                                                CurrentMonthPaymentInfo currentMonthPayment) {
         return new ProjectParticipantBillingView(
                 participant,
                 BillingMode.SUBSCRIPTION,
@@ -26,7 +28,8 @@ public record ProjectParticipantBillingView(Participant participant,
                 status,
                 subscriptionStatusLabel(status),
                 subscriptionStatusCssClass(status),
-                partialPaymentInfo);
+                partialPaymentInfo,
+                currentMonthPayment);
     }
 
     public static ProjectParticipantBillingView forPackage(Participant participant) {
@@ -38,7 +41,8 @@ public record ProjectParticipantBillingView(Participant participant,
                 null,
                 BillingMode.PACKAGE.getDisplayName(),
                 "badge text-bg-secondary",
-                null);
+                null,
+                CurrentMonthPaymentInfo.notApplicable());
     }
 
     public static String subscriptionStatusLabel(SubscriptionPaymentStatus status) {

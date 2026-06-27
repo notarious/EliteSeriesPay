@@ -2,8 +2,10 @@ package com.eliteseriespay.billing;
 
 import com.eliteseriespay.domain.BillingMode;
 import com.eliteseriespay.domain.Payment;
+import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.domain.SubscriptionPaymentStatus;
+import com.eliteseriespay.report.ReportFormatter;
 import com.eliteseriespay.repository.PaymentRepository;
 import com.eliteseriespay.repository.ProjectMembershipRepository;
 import java.time.YearMonth;
@@ -18,13 +20,16 @@ public class MembershipBillingService {
     private final ProjectMembershipRepository projectMembershipRepository;
     private final PaymentRepository paymentRepository;
     private final MembershipBillingCalculator membershipBillingCalculator;
+    private final ReportFormatter reportFormatter;
 
     public MembershipBillingService(ProjectMembershipRepository projectMembershipRepository,
                                     PaymentRepository paymentRepository,
-                                    MembershipBillingCalculator membershipBillingCalculator) {
+                                    MembershipBillingCalculator membershipBillingCalculator,
+                                    ReportFormatter reportFormatter) {
         this.projectMembershipRepository = projectMembershipRepository;
         this.paymentRepository = paymentRepository;
         this.membershipBillingCalculator = membershipBillingCalculator;
+        this.reportFormatter = reportFormatter;
     }
 
     @Transactional
@@ -49,6 +54,11 @@ public class MembershipBillingService {
                 state.paidUntilMonth(),
                 state.partialPaymentAmount(),
                 state.partialPaymentCurrency());
+    }
+
+    @Transactional(readOnly = true)
+    public String currentMonthPaymentColumnTitle(YearMonth currentMonth) {
+        return reportFormatter.formatCurrentMonthPaymentColumnTitle(currentMonth);
     }
 
     @Transactional(readOnly = true)
@@ -93,7 +103,8 @@ public class MembershipBillingService {
                 membership.getParticipant(),
                 membership.getPaidUntilMonth(),
                 status,
-                displayPartialPaymentInfo(status, partialPaymentInfo.orElse(null)));
+                displayPartialPaymentInfo(status, partialPaymentInfo.orElse(null)),
+                resolveCurrentMonthPayment(membership, currentMonth));
     }
 
     private ParticipantMembershipBillingView toParticipantBillingView(ProjectMembership membership,
@@ -113,7 +124,37 @@ public class MembershipBillingService {
                 membership.getProject(),
                 membership.getPaidUntilMonth(),
                 status,
-                displayPartialPaymentInfo(status, partialPaymentInfo.orElse(null)));
+                displayPartialPaymentInfo(status, partialPaymentInfo.orElse(null)),
+                resolveCurrentMonthPayment(membership, currentMonth));
+    }
+
+    private CurrentMonthPaymentInfo resolveCurrentMonthPayment(ProjectMembership membership,
+                                                                 YearMonth currentMonth) {
+        if (membership.getBillingMode() == BillingMode.PACKAGE) {
+            return CurrentMonthPaymentInfo.notApplicable();
+        }
+
+        return switch (membershipBillingCalculator.resolveCurrentMonthPaymentStatus(
+                membership.getPaidUntilMonth(), currentMonth)) {
+            case PAID -> CurrentMonthPaymentInfo.paid();
+            case NOT_PAID -> CurrentMonthPaymentInfo.notPaid();
+            case DEBT -> CurrentMonthPaymentInfo.debt(formatDebtAmount(membership));
+        };
+    }
+
+    private String formatDebtAmount(ProjectMembership membership) {
+        Optional<PartialPaymentInfo> partialPaymentInfo = membershipBillingCalculator.resolvePartialPaymentInfo(
+                membership.getProject(),
+                membership.getPartialPaymentAmount(),
+                membership.getPartialPaymentCurrency());
+        if (partialPaymentInfo.isPresent()) {
+            PartialPaymentInfo partial = partialPaymentInfo.get();
+            if (partial.advanceCurrency() == PaymentCurrency.EUR) {
+                return reportFormatter.formatEur(partial.remainingUntilRenewal());
+            }
+            return reportFormatter.formatRub(partial.remainingUntilRenewal());
+        }
+        return reportFormatter.formatRub(membership.getProject().getMonthlyFeeRub());
     }
 
     private static PartialPaymentInfo displayPartialPaymentInfo(SubscriptionPaymentStatus status,

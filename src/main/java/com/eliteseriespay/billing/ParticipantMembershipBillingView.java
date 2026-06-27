@@ -12,12 +12,14 @@ public record ParticipantMembershipBillingView(Project project,
                                                String paymentStatusLabel,
                                                String statusCssClass,
                                                boolean overdue,
-                                               PartialPaymentInfo partialPaymentInfo) {
+                                               PartialPaymentInfo partialPaymentInfo,
+                                               CurrentMonthPaymentInfo currentMonthPayment) {
 
     public static ParticipantMembershipBillingView forSubscription(Project project,
                                                                    YearMonth paidUntilMonth,
                                                                    SubscriptionPaymentStatus status,
-                                                                   PartialPaymentInfo partialPaymentInfo) {
+                                                                   PartialPaymentInfo partialPaymentInfo,
+                                                                   CurrentMonthPaymentInfo currentMonthPayment) {
         return new ParticipantMembershipBillingView(
                 project,
                 BillingMode.SUBSCRIPTION,
@@ -27,7 +29,8 @@ public record ParticipantMembershipBillingView(Project project,
                 ProjectParticipantBillingView.subscriptionStatusCssClass(status),
                 status == SubscriptionPaymentStatus.OVERDUE
                         || status == SubscriptionPaymentStatus.NO_PAYMENTS,
-                partialPaymentInfo);
+                partialPaymentInfo,
+                currentMonthPayment);
     }
 
     public static ParticipantMembershipBillingView forPackage(Project project) {
@@ -39,6 +42,7 @@ public record ParticipantMembershipBillingView(Project project,
                 BillingMode.PACKAGE.getDisplayName(),
                 "badge text-bg-secondary",
                 false,
-                null);
+                null,
+                CurrentMonthPaymentInfo.notApplicable());
     }
 }

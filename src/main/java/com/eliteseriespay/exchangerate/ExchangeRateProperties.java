@@ -6,7 +6,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @ConfigurationProperties(prefix = "eliteseriespay.exchange-rate")
 public class ExchangeRateProperties {
 
-    private String apiUrl = "https://api.frankfurter.app/latest";
+    private String apiUrl = "https://www.cbr-xml-daily.ru/daily_json.js";
     private Duration connectTimeout = Duration.ofSeconds(5);
     private Duration readTimeout = Duration.ofSeconds(5);
 

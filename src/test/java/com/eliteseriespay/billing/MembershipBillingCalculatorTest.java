@@ -10,6 +10,7 @@ import com.eliteseriespay.domain.PaymentSource;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.domain.SubscriptionPaymentStatus;
+import com.eliteseriespay.report.ReportFormatter;
 import com.eliteseriespay.support.TestEntities;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -66,7 +67,8 @@ class MembershipBillingCalculatorTest {
     void multiMonthPackagePayment_doesNotUpdateMembershipBillingFields() {
         ProjectMembership packageMembership = TestEntities.membership(
                 project, participant, MembershipStatus.ACTIVE, BillingMode.PACKAGE);
-        MembershipBillingService billingService = new MembershipBillingService(null, null, calculator);
+        MembershipBillingService billingService = new MembershipBillingService(
+                null, null, calculator, new ReportFormatter());
 
         billingService.recalculateBilling(packageMembership);
 
@@ -121,6 +123,38 @@ class MembershipBillingCalculatorTest {
 
         assertThat(calculator.resolveSubscriptionStatus(paidUntil, YearMonth.of(2026, 6)))
                 .isEqualTo(SubscriptionPaymentStatus.OVERDUE);
+    }
+
+    @Test
+    void resolveCurrentMonthPaymentStatus_paidWhenPaidThroughCurrentOrFutureMonth() {
+        assertThat(calculator.resolveCurrentMonthPaymentStatus(YearMonth.of(2026, 7), YearMonth.of(2026, 7)))
+                .isEqualTo(CurrentMonthPaymentStatus.PAID);
+        assertThat(calculator.resolveCurrentMonthPaymentStatus(YearMonth.of(2026, 12), YearMonth.of(2026, 7)))
+                .isEqualTo(CurrentMonthPaymentStatus.PAID);
+    }
+
+    @Test
+    void resolveCurrentMonthPaymentStatus_notPaidWhenPaidOnlyThroughPreviousMonth() {
+        assertThat(calculator.resolveCurrentMonthPaymentStatus(YearMonth.of(2026, 6), YearMonth.of(2026, 7)))
+                .isEqualTo(CurrentMonthPaymentStatus.NOT_PAID);
+    }
+
+    @Test
+    void resolveCurrentMonthPaymentStatus_debtWhenOverdueBeyondPreviousMonth() {
+        assertThat(calculator.resolveCurrentMonthPaymentStatus(YearMonth.of(2026, 4), YearMonth.of(2026, 7)))
+                .isEqualTo(CurrentMonthPaymentStatus.DEBT);
+        assertThat(calculator.resolveCurrentMonthPaymentStatus(null, YearMonth.of(2026, 7)))
+                .isEqualTo(CurrentMonthPaymentStatus.DEBT);
+    }
+
+    @Test
+    void resolveOutstandingRenewalAmount_usesMonthlyFeeOrPartialRemainder() {
+        assertThat(calculator.resolveOutstandingRenewalAmount(project, null, null))
+                .isEqualByComparingTo(MONTHLY_FEE_RUB);
+
+        assertThat(calculator.resolveOutstandingRenewalAmount(
+                project, new BigDecimal("100.00"), PaymentCurrency.RUB))
+                .isEqualByComparingTo("400.00");
     }
 
     @Test

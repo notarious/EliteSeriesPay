@@ -22,8 +22,10 @@ import com.eliteseriespay.web.ParticipantPaymentHistoryNavigation;
 import com.eliteseriespay.web.ProjectPaymentHistoryNavigation;
 import com.eliteseriespay.web.form.PaymentForm;
 import jakarta.validation.Valid;
+import jakarta.servlet.http.HttpServletRequest;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.data.domain.Page;
@@ -38,6 +40,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
@@ -342,7 +345,11 @@ public class ParticipantPaymentController {
     }
 
     @ExceptionHandler(NotFoundException.class)
-    public String handleNotFound(@PathVariable Long participantId) {
+    public String handleNotFound(HttpServletRequest request) {
+        @SuppressWarnings("unchecked")
+        Map<String, String> uriVariables = (Map<String, String>) request.getAttribute(
+                HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
+        String participantId = uriVariables.get("participantId");
         return "redirect:/participants/" + participantId + "/payments";
     }
 
