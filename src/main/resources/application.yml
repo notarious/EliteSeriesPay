@@ -35,6 +35,8 @@ logging:
     root: INFO
 
 eliteseriespay:
+  desktop:
+    open-browser-on-startup: true
   database-backup:
     database-path: ./eliteseriespay.db
     backup-directory: ./backups

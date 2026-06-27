@@ -72,7 +72,7 @@ try {
     }
 
     $JPackageArgs = @(
-        "--type", "msi",
+        "--type", "app-image",
         "--name", $AppName,
         "--app-version", $AppVersion,
         "--vendor", $Vendor,
@@ -81,35 +81,31 @@ try {
         "--main-jar", $MainJar,
         "--main-class", $SpringBootMainClass,
         "--dest", $OutputDir,
-        "--install-dir", $InstallDirName,
-        "--win-menu",
-        "--win-menu-group", $AppName,
-        "--java-options", "-Deliteseriespay.packaged=true"
+        "--java-options", "-Deliteseriespay.packaged=true",
+        "--java-options", "-Djava.awt.headless=false"
     )
 
-    if (-not $SkipDesktopShortcut) {
-        $JPackageArgs += "--win-shortcut"
-    }
+    # MSI-only options (--install-dir, --win-menu, --win-shortcut) omitted for app-image
 
     if (Test-Path $OutputDir) {
         Remove-Item $OutputDir -Recurse -Force
     }
     New-Item -ItemType Directory -Path $OutputDir | Out-Null
 
-    Write-Host "Creating Windows MSI installer..."
+    Write-Host "Creating Windows app-image..."
     & jpackage @JPackageArgs
     if ($LASTEXITCODE -ne 0) {
         throw "jpackage failed with exit code $LASTEXITCODE"
     }
 
-    $MsiFile = Get-ChildItem -Path $OutputDir -Filter "*.msi" | Select-Object -First 1
-    if ($null -eq $MsiFile) {
-        throw "MSI file was not created in $OutputDir"
+    $AppImageExe = Join-Path $OutputDir "$AppName\$AppName.exe"
+    if (-not (Test-Path $AppImageExe)) {
+        throw "App-image executable was not created: $AppImageExe"
     }
 
     Write-Host ""
-    Write-Host "MSI installer created:"
-    Write-Host "  $($MsiFile.FullName)"
+    Write-Host "App-image created:"
+    Write-Host "  $AppImageExe"
     Write-Host ""
     Write-Host "User data directory:"
     Write-Host "  %LOCALAPPDATA%\EliteSeriesPay"

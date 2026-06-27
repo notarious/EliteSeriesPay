@@ -19,19 +19,19 @@
             <ul class="navbar-nav ms-auto">
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/}"
-                       th:classappend="${#httpServletRequest.requestURI == '/'} ? 'active'">Главная</a>
+                       th:classappend="${navigation.homeActive()} ? 'active'">Главная</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/projects}"
-                       th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/projects')} ? 'active'">Проекты</a>
+                       th:classappend="${navigation.projectsActive()} ? 'active'">Проекты</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/participants}"
-                       th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/participants')} ? 'active'">Участники</a>
+                       th:classappend="${navigation.participantsActive()} ? 'active'">Участники</a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link" th:href="@{/backups}"
-                       th:classappend="${#strings.startsWith(#httpServletRequest.requestURI, '/backups')} ? 'active'">Резервные копии</a>
+                       th:classappend="${navigation.backupsActive()} ? 'active'">Резервные копии</a>
                 </li>
                 <li class="nav-item">
                     <button class="nav-link border-0 bg-transparent" type="button"

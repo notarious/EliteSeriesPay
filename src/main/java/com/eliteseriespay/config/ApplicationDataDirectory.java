@@ -73,7 +73,7 @@ public final class ApplicationDataDirectory {
         return "jdbc:sqlite:" + fileUri + "?busy_timeout=5000";
     }
 
-    static boolean isWindows() {
+    public static boolean isWindows() {
         String osName = System.getProperty("os.name", "");
         return osName.toLowerCase(Locale.ROOT).startsWith("windows");
     }
