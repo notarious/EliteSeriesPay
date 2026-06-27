@@ -13,7 +13,7 @@
 
     <groupId>com.eliteseriespay</groupId>
     <artifactId>eliteseriespay</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <name>EliteSeriesPay</name>
     <description>Local application for managing participants, payments and budgets</description>
 
