@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title th:text="${project.name} + ' — EliteSeriesPay'">Проект — EliteSeriesPay</title>
+    <title th:text="${project.name} + ' — Проекты от Ave Elite'">Проект — Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-start mb-3">
+    <div class="page-header d-flex justify-content-between align-items-start">
         <div>
             <h1 class="h3 mb-1" th:text="${project.name}">Пример проекта</h1>
-            <p class="text-muted small mb-0">
+            <p class="page-subtitle">
                 Стоимость эпизода:
                 <span th:text="${#numbers.formatDecimal(project.episodeCostRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
                     1,000.00 ₽
@@ -31,7 +31,7 @@
     </div>
 
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2 class="h5 mb-0">Участники</h2>
+        <h2 class="section-title mb-0">Участники</h2>
         <div class="d-flex gap-2">
             <a class="btn btn-outline-secondary btn-sm"
                th:href="@{/projects/{projectId}/reports(projectId=${project.id})}">Отчёты</a>
@@ -42,7 +42,7 @@
         </div>
     </div>
 
-    <form class="row g-2 align-items-end mb-3" method="get" th:action="@{/projects/{id}(id=${project.id})}">
+    <form class="filter-panel row g-2 align-items-end" method="get" th:action="@{/projects/{id}(id=${project.id})}">
         <div class="col-md-3 col-lg-2">
             <label for="billingMode" class="form-label small mb-1">Тип оплаты</label>
             <select class="form-select form-select-sm" id="billingMode" name="billingMode">
@@ -71,12 +71,13 @@
         </div>
     </form>
 
-    <div th:if="${#lists.isEmpty(participants)}" class="alert alert-info mb-0">
-        Нет участников по выбранным фильтрам.
+    <div th:if="${#lists.isEmpty(participants)}" class="empty-state" role="status">
+        <i class="bi bi-people empty-state-icon" aria-hidden="true"></i>
+        <p>Нет участников по выбранным фильтрам.</p>
     </div>
 
-    <div th:unless="${#lists.isEmpty(participants)}" class="table-responsive">
-        <table class="table table-sm table-striped align-middle">
+    <div th:unless="${#lists.isEmpty(participants)}" class="table-responsive app-table">
+        <table class="table table-hover align-middle mb-0">
             <thead>
             <tr>
                 <th scope="col">Имя</th>
@@ -104,9 +105,9 @@
         </table>
     </div>
 
-    <div class="card mt-4">
-        <div class="card-body py-3 px-3">
-            <h2 class="h6 mb-2" th:text="${monthlySummary.monthLabel}">Июнь 2026</h2>
+    <div class="card summary-card mt-4">
+        <div class="card-body">
+            <h2 class="section-title mb-2" th:text="${monthlySummary.monthLabel}">Июнь 2026</h2>
             <p th:if="${!monthlySummary.hasPayments()}" class="text-muted small mb-0">
                 За текущий месяц поступлений нет.
             </p>

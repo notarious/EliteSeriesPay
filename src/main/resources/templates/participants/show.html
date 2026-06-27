@@ -1,18 +1,18 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title th:text="${participant.name} + ' — EliteSeriesPay'">Участник — EliteSeriesPay</title>
+    <title th:text="${participant.name} + ' — Проекты от Ave Elite'">Участник — Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-start mb-3">
+    <div class="page-header d-flex justify-content-between align-items-start">
         <div>
             <h1 class="h3 mb-1" th:text="${participant.name}">Иван</h1>
-            <p class="text-muted small mb-1">
+            <p class="page-subtitle mb-1">
                 VK ID: <span th:text="${participant.vkId}">12345</span>
             </p>
-            <p class="text-muted small mb-0"
+            <p class="page-subtitle mb-0"
                th:if="${participant.comment != null and !#strings.isEmpty(participant.comment)}">
                 Комментарий:
                 <span th:text="${participant.comment}">—</span>
@@ -29,17 +29,18 @@
         </div>
     </div>
 
-    <div th:if="${#lists.isEmpty(activeMemberships)}" class="alert alert-info">
+    <div th:if="${#lists.isEmpty(activeMemberships)}" class="alert alert-warning flash-message">
         Сначала добавьте участника в проект.
     </div>
 
-    <h2 class="h5 mb-3">Платежи</h2>
+    <h2 class="section-title">Платежи</h2>
 
-    <div th:if="${!paymentSummary.hasPayments()}" class="alert alert-info">
-        Платежей пока нет.
+    <div th:if="${!paymentSummary.hasPayments()}" class="empty-state mb-4" role="status">
+        <i class="bi bi-cash-coin empty-state-icon" aria-hidden="true"></i>
+        <p>Платежей пока нет.</p>
     </div>
 
-    <div th:if="${paymentSummary.hasPayments()}" class="card mb-4">
+    <div th:if="${paymentSummary.hasPayments()}" class="card summary-card mb-4">
         <div class="card-body py-2 px-3">
             <dl class="row mb-0 small">
                 <dt class="col-sm-4 col-md-3 col-lg-2 mb-1">Последний платёж</dt>
@@ -75,14 +76,15 @@
         </div>
     </div>
 
-    <h2 class="h5 mb-3">Активные проекты</h2>
+    <h2 class="section-title">Активные проекты</h2>
 
-    <div th:if="${#lists.isEmpty(membershipBillingViews)}" class="alert alert-info">
-        Участник не состоит ни в одном активном проекте.
+    <div th:if="${#lists.isEmpty(membershipBillingViews)}" class="empty-state mb-4" role="status">
+        <i class="bi bi-collection empty-state-icon" aria-hidden="true"></i>
+        <p>Участник не состоит ни в одном активном проекте.</p>
     </div>
 
-    <div th:unless="${#lists.isEmpty(membershipBillingViews)}" class="table-responsive mb-4">
-        <table class="table table-sm table-striped align-middle">
+    <div th:unless="${#lists.isEmpty(membershipBillingViews)}" class="table-responsive app-table mb-4">
+        <table class="table table-hover align-middle mb-0">
             <thead>
             <tr>
                 <th scope="col">Проект</th>
@@ -111,10 +113,10 @@
     </div>
 
     <div th:unless="${#lists.isEmpty(leftMemberships)}">
-        <h2 class="h5 mb-3">Покинутые проекты</h2>
+        <h2 class="section-title">Покинутые проекты</h2>
 
-        <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle">
+        <div class="table-responsive app-table">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                 <tr>
                     <th scope="col">Проект</th>

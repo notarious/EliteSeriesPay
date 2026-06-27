@@ -1,22 +1,23 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title>Проекты &mdash; EliteSeriesPay</title>
+    <title>Проекты &mdash; Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-header d-flex justify-content-between align-items-center">
         <h1 class="h3 mb-0">Проекты</h1>
         <a class="btn btn-primary btn-sm" th:href="@{/projects/new}">Новый проект</a>
     </div>
 
-    <div th:if="${#lists.isEmpty(projects)}" class="alert alert-info mb-0">
-        Проектов пока нет. Создайте первый, чтобы начать.
+    <div th:if="${#lists.isEmpty(projects)}" class="empty-state" role="status">
+        <i class="bi bi-collection empty-state-icon" aria-hidden="true"></i>
+        <p>Проектов пока нет. Создайте первый, чтобы начать.</p>
     </div>
 
-    <div th:unless="${#lists.isEmpty(projects)}" class="table-responsive">
-        <table class="table table-sm table-striped align-middle">
+    <div th:unless="${#lists.isEmpty(projects)}" class="table-responsive app-table">
+        <table class="table table-hover align-middle mb-0">
             <thead>
             <tr>
                 <th scope="col">Название</th>

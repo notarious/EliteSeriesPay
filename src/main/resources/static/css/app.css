@@ -1,0 +1,263 @@
+:root {
+    --app-brand-bg: #1a2332;
+    --app-accent: #2563eb;
+    --app-accent-hover: #1d4ed8;
+    --app-page-bg: #f3f5f8;
+    --app-surface: #ffffff;
+    --app-border: #dee3ea;
+    --app-text-muted: #5c6778;
+    --app-heading: #1a2332;
+}
+
+body {
+    background-color: var(--app-page-bg);
+    color: #212529;
+}
+
+.navbar-app {
+    background-color: var(--app-brand-bg) !important;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.18);
+}
+
+.navbar-app .navbar-brand {
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+}
+
+.navbar-app .nav-link {
+    font-size: 0.925rem;
+    padding-top: 0.35rem;
+    padding-bottom: 0.35rem;
+}
+
+.navbar-app .nav-link.active {
+    font-weight: 600;
+}
+
+.navbar-app .btn-nav-action {
+    font-size: 0.925rem;
+    padding: 0.35rem 0.75rem;
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.navbar-app .btn-nav-action:hover,
+.navbar-app .btn-nav-action:focus {
+    color: #fff;
+}
+
+main.container {
+    max-width: 1140px;
+}
+
+.page-header {
+    margin-bottom: 1.5rem;
+}
+
+.page-header h1,
+.page-header .h3 {
+    color: var(--app-heading);
+    font-weight: 600;
+}
+
+.page-header .page-subtitle {
+    color: var(--app-text-muted);
+    font-size: 0.925rem;
+    margin-bottom: 0;
+}
+
+.section-title {
+    color: var(--app-heading);
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+}
+
+.dashboard-hero {
+    margin-bottom: 2rem;
+}
+
+.dashboard-hero h1 {
+    color: var(--app-heading);
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-hero .lead {
+    color: var(--app-text-muted);
+    font-size: 1rem;
+    max-width: 42rem;
+}
+
+.dashboard-card {
+    border: 1px solid var(--app-border);
+    border-radius: 0.75rem;
+    background: var(--app-surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
+    transition: box-shadow 0.15s ease, transform 0.15s ease;
+    height: 100%;
+}
+
+.dashboard-card:hover {
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.08);
+    transform: translateY(-1px);
+}
+
+.dashboard-card .card-body {
+    padding: 1.35rem 1.25rem;
+}
+
+.dashboard-card-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 0.65rem;
+    background: rgba(37, 99, 235, 0.1);
+    color: var(--app-accent);
+    font-size: 1.2rem;
+    margin-bottom: 0.85rem;
+}
+
+.dashboard-card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    color: var(--app-heading);
+    margin-bottom: 0.35rem;
+}
+
+.dashboard-card-text {
+    color: var(--app-text-muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.filter-panel {
+    background: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: 0.65rem;
+    padding: 0.85rem 1rem;
+    margin-bottom: 1.25rem;
+}
+
+.app-table {
+    background: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: 0.65rem;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.app-table > table {
+    margin-bottom: 0;
+}
+
+.app-table thead th {
+    background: #f8fafc;
+    border-bottom-width: 1px;
+    color: #475569;
+    font-size: 0.8125rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.app-table tbody td,
+.app-table tbody th {
+    font-size: 0.9375rem;
+    vertical-align: middle;
+}
+
+.app-table.table-hover tbody tr:hover {
+    background-color: rgba(37, 99, 235, 0.04);
+}
+
+.summary-card {
+    border: 1px solid var(--app-border);
+    border-radius: 0.65rem;
+    background: var(--app-surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.summary-card .card-body {
+    padding: 1rem 1.1rem;
+}
+
+.empty-state {
+    background: var(--app-surface);
+    border: 1px dashed var(--app-border);
+    border-radius: 0.65rem;
+    color: var(--app-text-muted);
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+}
+
+.empty-state-icon {
+    display: block;
+    font-size: 1.75rem;
+    color: #94a3b8;
+    margin-bottom: 0.65rem;
+}
+
+.empty-state p {
+    margin-bottom: 0;
+}
+
+.flash-message {
+    border-radius: 0.55rem;
+    margin-bottom: 1.25rem;
+}
+
+.badge {
+    border-radius: 50rem;
+    font-weight: 500;
+    letter-spacing: 0.01em;
+    padding: 0.4em 0.75em;
+}
+
+.btn {
+    font-weight: 500;
+}
+
+.btn-primary {
+    background-color: var(--app-accent);
+    border-color: var(--app-accent);
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: var(--app-accent-hover);
+    border-color: var(--app-accent-hover);
+}
+
+.btn-outline-primary {
+    --bs-btn-color: var(--app-accent);
+    --bs-btn-border-color: var(--app-accent);
+    --bs-btn-hover-bg: var(--app-accent);
+    --bs-btn-hover-border-color: var(--app-accent);
+    --bs-btn-active-bg: var(--app-accent-hover);
+    --bs-btn-active-border-color: var(--app-accent-hover);
+}
+
+.form-card {
+    background: var(--app-surface);
+    border: 1px solid var(--app-border);
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+}
+
+.app-footer {
+    background: var(--app-surface) !important;
+    border-top: 1px solid var(--app-border) !important;
+    color: var(--app-text-muted);
+}
+
+.pagination .page-link {
+    border-radius: 0.4rem;
+    margin: 0 0.1rem;
+}

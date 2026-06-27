@@ -1,25 +1,65 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title>Главная &mdash; EliteSeriesPay</title>
+    <title>Главная &mdash; Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
-    <div class="alert alert-success py-2" th:if="${successMessage}" th:text="${successMessage}">
+    <div class="alert alert-success flash-message py-2" th:if="${successMessage}" th:text="${successMessage}">
         Все данные успешно удалены.
     </div>
 
-    <div class="row">
-        <div class="col-lg-8">
-            <h1 class="mb-3">EliteSeriesPay</h1>
-            <p class="lead mb-4">
-                Локальное приложение для управления участниками, платежами и бюджетами небольших платных сообществ.
-            </p>
-            <div class="d-flex flex-wrap gap-2">
-                <a class="btn btn-primary" th:href="@{/projects}">Проекты</a>
-                <a class="btn btn-outline-primary" th:href="@{/participants}">Участники</a>
-                <a class="btn btn-outline-secondary" th:href="@{/backups}">Резервные копии</a>
+    <header class="dashboard-hero">
+        <h1>Проекты от Ave Elite</h1>
+        <p class="lead mb-0">
+            Локальное приложение для управления проектами, участниками, платежами и бюджетами небольших платных сообществ.
+        </p>
+    </header>
+
+    <div class="row g-3 g-lg-4">
+        <div class="col-md-6 col-lg-4">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <span class="dashboard-card-icon" aria-hidden="true">
+                        <i class="bi bi-collection"></i>
+                    </span>
+                    <h2 class="dashboard-card-title">Проекты</h2>
+                    <p class="dashboard-card-text">
+                        Создавайте проекты, настраивайте стоимость серий и управляйте составом участников.
+                    </p>
+                    <a class="btn btn-primary btn-sm" th:href="@{/projects}">Открыть проекты</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <span class="dashboard-card-icon" aria-hidden="true">
+                        <i class="bi bi-people"></i>
+                    </span>
+                    <h2 class="dashboard-card-title">Участники</h2>
+                    <p class="dashboard-card-text">
+                        Ведите список участников, их VK ID и участие в нескольких проектах одновременно.
+                    </p>
+                    <a class="btn btn-primary btn-sm" th:href="@{/participants}">Открыть участников</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-4">
+            <div class="card dashboard-card">
+                <div class="card-body">
+                    <span class="dashboard-card-icon" aria-hidden="true">
+                        <i class="bi bi-bar-chart-line"></i>
+                    </span>
+                    <h2 class="dashboard-card-title">Отчёты и бюджет</h2>
+                    <p class="dashboard-card-text">
+                        Смотрите месячные отчёты, поступления и расчёт финансирования серий в карточке каждого проекта.
+                    </p>
+                    <a class="btn btn-outline-primary btn-sm" th:href="@{/projects}">Перейти к проектам</a>
+                </div>
             </div>
         </div>
     </div>

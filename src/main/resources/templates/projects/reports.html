@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title th:text="'Отчёты — ' + ${project.name} + ' — EliteSeriesPay'">Отчёты — EliteSeriesPay</title>
+    <title th:text="'Отчёты — ' + ${project.name} + ' — Проекты от Ave Elite'">Отчёты — Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-start mb-3">
+    <div class="page-header d-flex justify-content-between align-items-start">
         <div>
             <h1 class="h3 mb-1">Отчёты</h1>
-            <p class="text-muted small mb-0">
+            <p class="page-subtitle">
                 Проект:
                 <a th:href="@{/projects/{id}(id=${project.id})}" th:text="${project.name}">Пример проекта</a>
             </p>
@@ -17,7 +17,7 @@
         <a class="btn btn-outline-secondary btn-sm" th:href="@{/projects/{id}(id=${project.id})}">К проекту</a>
     </div>
 
-    <form class="row g-2 align-items-end mb-3" method="get"
+    <form class="filter-panel row g-2 align-items-end" method="get"
           th:action="@{/projects/{projectId}/reports(projectId=${project.id})}">
         <div class="col-auto">
             <label class="form-label small mb-1" for="month">Месяц</label>
@@ -40,16 +40,17 @@
         </div>
     </form>
 
-    <h2 class="h5 mb-3" th:text="${report.monthLabel}">Июнь 2026</h2>
+    <h2 class="section-title" th:text="${report.monthLabel}">Июнь 2026</h2>
 
-    <div th:if="${!report.hasPayments()}" class="alert alert-info mb-0">
-        За выбранный месяц поступлений нет.
+    <div th:if="${!report.hasPayments()}" class="empty-state" role="status">
+        <i class="bi bi-bar-chart empty-state-icon" aria-hidden="true"></i>
+        <p>За выбранный месяц поступлений нет.</p>
     </div>
 
     <div th:if="${report.hasPayments()}">
         <div class="row g-3 mb-4">
             <div class="col-sm-6 col-lg-3">
-                <div class="card h-100">
+                <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Получено</div>
                         <div class="fw-semibold" th:text="${report.totalGrossRubFormatted}">35 000,00 ₽</div>
@@ -57,7 +58,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-lg-3">
-                <div class="card h-100">
+                <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Чистыми</div>
                         <div class="fw-semibold" th:text="${report.totalNetRubFormatted}">31 800,00 ₽</div>
@@ -65,7 +66,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-lg-3">
-                <div class="card h-100">
+                <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Серий оплачено</div>
                         <div class="fw-semibold" th:text="${report.episodeFunding.episodesFunded()}">7</div>
@@ -73,7 +74,7 @@
                 </div>
             </div>
             <div class="col-sm-6 col-lg-3">
-                <div class="card h-100">
+                <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Остаток</div>
                         <div class="fw-semibold" th:text="${report.remainingRubFormatted}">300,00 ₽</div>
@@ -82,9 +83,9 @@
             </div>
         </div>
 
-        <h3 class="h6 mb-2">По источникам</h3>
-        <div class="table-responsive mb-4">
-            <table class="table table-sm table-striped align-middle">
+        <h3 class="section-title">По источникам</h3>
+        <div class="table-responsive app-table mb-4">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                 <tr>
                     <th scope="col">Источник</th>
@@ -105,9 +106,9 @@
         </div>
 
         <div th:if="${!#lists.isEmpty(report.participantContributions)}">
-            <h3 class="h6 mb-2">Вклад участников</h3>
-            <div class="table-responsive">
-                <table class="table table-sm table-striped align-middle">
+            <h3 class="section-title">Вклад участников</h3>
+            <div class="table-responsive app-table">
+                <table class="table table-hover align-middle mb-0">
                     <thead>
                     <tr>
                         <th scope="col">Участник</th>

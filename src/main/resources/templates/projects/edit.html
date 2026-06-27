@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title>Редактирование проекта &mdash; EliteSeriesPay</title>
+    <title>Редактирование проекта &mdash; Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
@@ -14,6 +14,7 @@
                    th:href="@{/projects/{id}(id=${projectId})}">К проекту</a>
             </div>
 
+            <div class="form-card">
             <form th:action="@{/projects/{id}/edit(id=${projectId})}" th:object="${projectForm}" method="post"
                   novalidate>
                 <div class="mb-3">
@@ -55,6 +56,7 @@
                     <a class="btn btn-outline-secondary" th:href="@{/projects/{id}(id=${projectId})}">Отмена</a>
                 </div>
             </form>
+            </div>
         </div>
     </div>
 </div>

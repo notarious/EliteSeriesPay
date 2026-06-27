@@ -1,17 +1,17 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title>Участники &mdash; EliteSeriesPay</title>
+    <title>Участники &mdash; Проекты от Ave Elite</title>
 </head>
 <body>
 <div th:fragment="content">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="page-header d-flex justify-content-between align-items-center">
         <h1 class="h3 mb-0">Участники</h1>
         <a class="btn btn-primary btn-sm" th:href="@{/participants/new}">Новый участник</a>
     </div>
 
-    <form class="row g-2 align-items-end mb-3" method="get" th:action="@{/participants}">
+    <form class="filter-panel row g-2 align-items-end" method="get" th:action="@{/participants}">
         <div class="col-md-4 col-lg-3">
             <label class="form-label small mb-1" for="searchQuery">Имя или VK ID</label>
             <input class="form-control form-control-sm" id="searchQuery" name="q" type="search"
@@ -33,13 +33,15 @@
     </form>
 
     <div th:if="${participantsPage.totalElements == 0 and #strings.isEmpty(searchQuery)}"
-         class="alert alert-info mb-0">
-        Участников пока нет. Создайте первого участника.
+         class="empty-state" role="status">
+        <i class="bi bi-people empty-state-icon" aria-hidden="true"></i>
+        <p>Участников пока нет. Создайте первого участника.</p>
     </div>
 
     <div th:if="${participantsPage.totalElements == 0 and !#strings.isEmpty(searchQuery)}"
-         class="alert alert-info mb-0">
-        Ничего не найдено. Попробуйте изменить запрос.
+         class="empty-state" role="status">
+        <i class="bi bi-search empty-state-icon" aria-hidden="true"></i>
+        <p>Ничего не найдено. Попробуйте изменить запрос.</p>
     </div>
 
     <div th:unless="${participantsPage.totalElements == 0}">
@@ -53,8 +55,8 @@
             </div>
         </div>
 
-        <div class="table-responsive">
-            <table class="table table-sm table-striped align-middle">
+        <div class="table-responsive app-table">
+            <table class="table table-hover align-middle mb-0">
                 <thead>
                 <tr>
                     <th scope="col">Имя</th>
@@ -97,7 +99,7 @@
             </table>
         </div>
 
-        <nav th:if="${participantsPage.totalPages > 1}" aria-label="Навигация по страницам">
+        <nav class="mt-3" th:if="${participantsPage.totalPages > 1}" aria-label="Навигация по страницам">
             <ul class="pagination pagination-sm justify-content-center mb-0">
                 <li class="page-item" th:classappend="${participantsPage.first} ? 'disabled'">
                     <a class="page-link"

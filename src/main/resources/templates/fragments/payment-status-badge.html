@@ -1,8 +1,8 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <span th:fragment="badgeFromVoided(voided, label)"
-      th:class="${voided} ? 'badge text-bg-secondary' : 'badge text-bg-success'"
+      th:class="${voided} ? 'badge rounded-pill text-bg-secondary' : 'badge rounded-pill text-bg-success'"
       th:text="${label}">Активен</span>
 
 <span th:fragment="badge(status)"
