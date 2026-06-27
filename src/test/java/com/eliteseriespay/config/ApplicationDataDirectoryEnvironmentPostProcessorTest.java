@@ -31,7 +31,38 @@ class ApplicationDataDirectoryEnvironmentPostProcessorTest {
                 .isEqualTo(expectedDatabase.toString());
         assertThat(environment.getProperty("eliteseriespay.database-backup.backup-directory"))
                 .isEqualTo(expectedBackups.toString());
+        assertThat(Files.isDirectory(tempDir)).isTrue();
         assertThat(Files.isDirectory(expectedBackups)).isTrue();
+    }
+
+    @Test
+    void postProcessEnvironment_configuresPackagedWindowsPaths(@TempDir Path localAppDataRoot) {
+        String originalOsName = System.getProperty("os.name");
+        try {
+            System.setProperty("os.name", "Windows 11");
+
+            MockEnvironment environment = new MockEnvironment()
+                    .withProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, "true")
+                    .withProperty("LOCALAPPDATA", localAppDataRoot.toString());
+
+            new ApplicationDataDirectoryEnvironmentPostProcessor()
+                    .postProcessEnvironment(environment, new SpringApplication());
+
+            Path expectedDataDirectory = localAppDataRoot.resolve("EliteSeriesPay");
+            Path expectedDatabase = expectedDataDirectory.resolve("eliteseriespay.db");
+            Path expectedBackups = expectedDataDirectory.resolve("backups");
+
+            assertThat(environment.getProperty("spring.datasource.url"))
+                    .isEqualTo(ApplicationDataDirectory.toJdbcSqliteFileUrl(expectedDatabase));
+            assertThat(Files.isDirectory(expectedDataDirectory)).isTrue();
+            assertThat(Files.isDirectory(expectedBackups)).isTrue();
+        } finally {
+            if (originalOsName == null) {
+                System.clearProperty("os.name");
+            } else {
+                System.setProperty("os.name", originalOsName);
+            }
+        }
     }
 
     @Test

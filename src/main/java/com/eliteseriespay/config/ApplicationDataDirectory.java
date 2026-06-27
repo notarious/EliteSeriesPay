@@ -20,16 +20,31 @@ public final class ApplicationDataDirectory {
         if (StringUtils.hasText(environment.getProperty(DATA_DIR_PROPERTY))) {
             return true;
         }
-        return Boolean.TRUE.equals(environment.getProperty(PACKAGED_PROPERTY, Boolean.class))
-                && isWindows();
+        return isPackaged(environment) && isWindows();
+    }
+
+    public static boolean isPackaged(ConfigurableEnvironment environment) {
+        Boolean packaged = environment.getProperty(PACKAGED_PROPERTY, Boolean.class);
+        if (Boolean.TRUE.equals(packaged)) {
+            return true;
+        }
+        return Boolean.parseBoolean(System.getProperty(PACKAGED_PROPERTY, "false"));
     }
 
     public static Path resolve(ConfigurableEnvironment environment) {
         return resolve(
                 environment.getProperty(DATA_DIR_PROPERTY),
-                Boolean.TRUE.equals(environment.getProperty(PACKAGED_PROPERTY, Boolean.class)),
-                System.getenv("LOCALAPPDATA"),
+                isPackaged(environment),
+                localAppDataDirectory(environment),
                 Path.of(System.getProperty("user.dir")));
+    }
+
+    private static String localAppDataDirectory(ConfigurableEnvironment environment) {
+        String fromEnvironment = environment.getProperty("LOCALAPPDATA");
+        if (StringUtils.hasText(fromEnvironment)) {
+            return fromEnvironment;
+        }
+        return System.getenv("LOCALAPPDATA");
     }
 
     static Path resolve(String dataDir, boolean packaged, String localAppData, Path workingDirectory) {
@@ -54,9 +69,8 @@ public final class ApplicationDataDirectory {
     }
 
     public static String toJdbcSqliteFileUrl(Path databaseFile) {
-        String normalizedPath =
-                databaseFile.toAbsolutePath().normalize().toString().replace('\\', '/');
-        return "jdbc:sqlite:file:" + normalizedPath + "?busy_timeout=5000";
+        String fileUri = databaseFile.toAbsolutePath().normalize().toUri().toString();
+        return "jdbc:sqlite:" + fileUri + "?busy_timeout=5000";
     }
 
     static boolean isWindows() {

@@ -61,10 +61,63 @@ class ApplicationDataDirectoryTest {
     @Test
     void toJdbcSqliteFileUrl_usesAbsolutePath() {
         Path databaseFile = Path.of("data-dir", "eliteseriespay.db");
-        String normalizedPath = databaseFile.toAbsolutePath().normalize().toString().replace('\\', '/');
+        String expected = "jdbc:sqlite:" + databaseFile.toAbsolutePath().normalize().toUri() + "?busy_timeout=5000";
 
-        assertThat(ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile))
-                .isEqualTo("jdbc:sqlite:file:" + normalizedPath + "?busy_timeout=5000");
+        assertThat(ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile)).isEqualTo(expected);
+    }
+
+    @Test
+    void resolve_readsLocalAppDataFromEnvironment() {
+        MockEnvironment environment = new MockEnvironment()
+                .withProperty("LOCALAPPDATA", "C:\\Users\\test\\AppData\\Local")
+                .withProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, "true");
+
+        assertThat(ApplicationDataDirectory.resolve(environment))
+                .isEqualTo(Path.of("C:\\Users\\test\\AppData\\Local", "EliteSeriesPay"));
+    }
+
+    @Test
+    void toJdbcSqliteFileUrl_canOpenDatabaseFile() throws Exception {
+        Path databaseFile = java.nio.file.Files.createTempDirectory("esp-sqlite-url-test")
+                .resolve("eliteseriespay.db");
+
+        try (var connection = java.sql.DriverManager.getConnection(
+                ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile))) {
+            assertThat(connection).isNotNull();
+            assertThat(java.nio.file.Files.exists(databaseFile)).isTrue();
+        } finally {
+            java.nio.file.Files.deleteIfExists(databaseFile);
+        }
+    }
+
+    @Test
+    void toJdbcSqliteFileUrl_avoidsBrokenWindowsDriveLetterUriScheme() {
+        String jdbcUrl = ApplicationDataDirectory.toJdbcSqliteFileUrl(
+                Path.of("/tmp/EliteSeriesPay/eliteseriespay.db"));
+
+        assertThat(jdbcUrl).startsWith("jdbc:sqlite:file:");
+        assertThat(jdbcUrl).doesNotContain("file:C:");
+        assertThat(jdbcUrl).doesNotContain("file:D:");
+    }
+
+    @Test
+    void isPackaged_readsSystemPropertyWhenEnvironmentPropertyMissing() {
+        String originalValue = System.getProperty(ApplicationDataDirectory.PACKAGED_PROPERTY);
+        try {
+            System.setProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, "true");
+
+            assertThat(ApplicationDataDirectory.isPackaged(new MockEnvironment())).isTrue();
+        } finally {
+            restoreSystemProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, originalValue);
+        }
+    }
+
+    private static void restoreSystemProperty(String key, String originalValue) {
+        if (originalValue == null) {
+            System.clearProperty(key);
+        } else {
+            System.setProperty(key, originalValue);
+        }
     }
 
     @Test
