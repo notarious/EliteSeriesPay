@@ -1,7 +1,8 @@
 package com.eliteseriespay.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.eliteseriespay.domain.ApplicationSettings;
@@ -35,12 +36,16 @@ class ApplicationSettingsServiceTest {
     }
 
     @Test
-    void getSettings_throwsWhenNotInitialized() {
+    void getSettings_createsDefaultSettingsWhenMissing() {
         when(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
                 .thenReturn(Optional.empty());
+        when(applicationSettingsRepository.save(any(ApplicationSettings.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
-        assertThatThrownBy(() -> applicationSettingsService.getSettings())
-                .isInstanceOf(IllegalStateException.class)
-                .hasMessage("Application settings not initialized");
+        ApplicationSettings settings = applicationSettingsService.getSettings();
+
+        assertThat(settings.getVkDonutFeePercent())
+                .isEqualTo(ApplicationSettings.DEFAULT_VK_DONUT_FEE_PERCENT);
+        verify(applicationSettingsRepository).save(any(ApplicationSettings.class));
     }
 }

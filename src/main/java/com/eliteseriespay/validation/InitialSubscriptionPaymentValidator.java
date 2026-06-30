@@ -3,6 +3,7 @@ package com.eliteseriespay.validation;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.format.AmountFormatter;
 import java.math.BigDecimal;
 
 public final class InitialSubscriptionPaymentValidator {
@@ -23,12 +24,8 @@ public final class InitialSubscriptionPaymentValidator {
 
         if (amountOriginal.compareTo(requiredAmount) < 0) {
             String message = ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT.getMessage()
-                    + ": " + formatRequiredAmount(requiredAmount, currency) + ".";
+                    + ": " + AmountFormatter.formatWithCurrency(requiredAmount, currency);
             throw new ValidationException(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT, message);
         }
-    }
-
-    private static String formatRequiredAmount(BigDecimal amount, PaymentCurrency currency) {
-        return amount.stripTrailingZeros().toPlainString() + " " + currency.getDisplayName();
     }
 }

@@ -51,6 +51,10 @@
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Сохранить изменения</button>
+                    <a th:if="${projectHistoryNavigation != null}" class="btn btn-outline-secondary"
+                       th:href="${projectHistoryNavigation.listUrl()}">Отмена</a>
+                    <a th:unless="${projectHistoryNavigation != null}" class="btn btn-outline-secondary"
+                       th:href="${historyNavigation.listUrl()}">Отмена</a>
                 </div>
             </form>
         </div>

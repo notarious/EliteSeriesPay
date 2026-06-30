@@ -12,6 +12,8 @@ import com.eliteseriespay.report.ProjectReportService;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.service.ProjectService;
 import com.eliteseriespay.web.FormErrorMapper;
+import com.eliteseriespay.web.ProjectParticipantsFilter;
+import com.eliteseriespay.web.ProjectParticipantsNavigation;
 import com.eliteseriespay.web.form.ProjectForm;
 import jakarta.validation.Valid;
 import java.time.YearMonth;
@@ -100,6 +102,8 @@ public class ProjectController {
                 membershipBillingService.currentMonthPaymentColumnTitle(currentMonth));
         model.addAttribute("selectedBillingMode", billingMode);
         model.addAttribute("selectedPaymentStatus", paymentStatus);
+        model.addAttribute("participantsNavigation", ProjectParticipantsNavigation.of(
+                id, ProjectParticipantsFilter.of(billingMode, paymentStatus)));
         model.addAttribute("billingModes", BillingMode.values());
         model.addAttribute("paymentStatusFilters", MembershipPaymentStatusFilter.values());
         model.addAttribute("monthlySummary", projectReportService.buildCurrentMonthSummary(id));

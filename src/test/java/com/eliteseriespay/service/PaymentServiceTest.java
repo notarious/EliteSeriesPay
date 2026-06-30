@@ -24,6 +24,7 @@ import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.domain.ProjectMembership;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.format.AmountFormatter;
 import com.eliteseriespay.payment.PaymentCalculator;
 import com.eliteseriespay.payment.PaymentFormDefaults;
 import com.eliteseriespay.payment.history.ParticipantPaymentHistoryFilter;
@@ -650,10 +651,8 @@ class PaymentServiceTest {
                     assertThat(validationException.getMessage())
                             .isEqualTo(ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT.getMessage()
                                     + ": "
-                                    + project.getMonthlyFeeRub().stripTrailingZeros().toPlainString()
-                                    + " "
-                                    + PaymentCurrency.RUB.getDisplayName()
-                                    + ".");
+                                    + AmountFormatter.formatWithCurrency(
+                                            project.getMonthlyFeeRub(), PaymentCurrency.RUB));
                 });
 
         verify(projectMembershipRepository, never()).save(any(ProjectMembership.class));

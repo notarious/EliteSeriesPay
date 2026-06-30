@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 public class ApplicationSettings {
 
     public static final long SINGLETON_ID = 1L;
+    public static final int DEFAULT_VK_DONUT_FEE_PERCENT = 10;
 
     @Id
     @Column(columnDefinition = "INTEGER")

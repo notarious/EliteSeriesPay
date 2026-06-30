@@ -14,13 +14,14 @@ public class ApplicationSettingsService {
         this.applicationSettingsRepository = applicationSettingsRepository;
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public ApplicationSettings getSettings() {
         return applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID)
-                .orElseThrow(() -> new IllegalStateException("Application settings not initialized"));
+                .orElseGet(() -> applicationSettingsRepository.save(
+                        new ApplicationSettings(ApplicationSettings.DEFAULT_VK_DONUT_FEE_PERCENT)));
     }
 
-    @Transactional(readOnly = true)
+    @Transactional
     public int getVkDonutFeePercent() {
         return getSettings().getVkDonutFeePercent();
     }

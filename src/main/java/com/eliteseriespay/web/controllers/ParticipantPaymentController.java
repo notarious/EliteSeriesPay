@@ -120,7 +120,7 @@ public class ParticipantPaymentController {
         if (projectId != null && activeProjectIds.contains(projectId)) {
             paymentForm.setProjectId(projectId);
         }
-        populateFormModel(model, participantId, activeMemberships, paymentForm, false, null);
+        populateFormModel(model, participantId, activeMemberships, paymentForm, false, returnTo);
         return "participants/payment-new";
     }
 
@@ -142,7 +142,7 @@ public class ParticipantPaymentController {
         }
 
         if (bindingResult.hasErrors()) {
-            populateFormModel(model, participantId, activeMemberships, paymentForm, false, null);
+            populateFormModel(model, participantId, activeMemberships, paymentForm, false, returnTo);
             return "participants/payment-new";
         }
 
@@ -158,11 +158,11 @@ public class ParticipantPaymentController {
                     paymentForm.getComment());
         } catch (ValidationException ex) {
             rejectPaymentForm(bindingResult, ex);
-            populateFormModel(model, participantId, activeMemberships, paymentForm, false, null);
+            populateFormModel(model, participantId, activeMemberships, paymentForm, false, returnTo);
             return "participants/payment-new";
         }
 
-        return "redirect:/participants/" + participantId;
+        return redirectAfterPaymentSave(participantId, returnTo);
     }
 
     @GetMapping("/{paymentId}/edit")
@@ -383,6 +383,7 @@ public class ParticipantPaymentController {
         model.addAttribute("paymentForm", paymentForm);
         model.addAttribute("initialMembership", initialMembership);
         model.addAttribute("returnTo", returnTo);
+        model.addAttribute("cancelUrl", resolveCancelUrl(returnTo, participantId));
     }
 
     private void populateInitialMembershipFormModel(Model model,
@@ -397,7 +398,8 @@ public class ParticipantPaymentController {
         model.addAttribute("initialMembershipProject", project);
         model.addAttribute("paymentForm", paymentForm);
         model.addAttribute("initialMembership", true);
-        model.addAttribute("returnTo", returnTo != null ? returnTo : "/participants/" + participantId);
+        model.addAttribute("returnTo", returnTo);
+        model.addAttribute("cancelUrl", resolveCancelUrl(returnTo, participantId));
     }
 
     private String createInitialMembershipPayment(Long participantId,
@@ -431,8 +433,8 @@ public class ParticipantPaymentController {
             return "participants/payment-new";
         }
 
-        String redirectTarget = returnTo != null ? returnTo : "/participants/" + participantId;
-        return "redirect:" + redirectTarget;
+        String redirectTarget = redirectAfterPaymentSave(participantId, returnTo);
+        return redirectTarget;
     }
 
     private void populateEditFormModel(Model model,
@@ -560,9 +562,20 @@ public class ParticipantPaymentController {
             default -> throw new IllegalStateException("Unexpected validation error: " + error);
         };
         if (field != null) {
-            bindingResult.rejectValue(field, error.name(), error.getMessage());
+            bindingResult.rejectValue(field, error.name(), ex.getMessage());
         } else {
-            bindingResult.reject(error.name(), error.getMessage());
+            bindingResult.reject(error.name(), ex.getMessage());
         }
+    }
+
+    private String redirectAfterPaymentSave(Long participantId, String returnTo) {
+        return "redirect:" + resolveCancelUrl(returnTo, participantId);
+    }
+
+    private String resolveCancelUrl(String returnTo, Long participantId) {
+        if (returnTo != null && returnTo.startsWith("/") && !returnTo.startsWith("//")) {
+            return returnTo;
+        }
+        return "/participants/" + participantId + "/payments";
     }
 }

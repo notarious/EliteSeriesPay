@@ -15,8 +15,7 @@
                         Участник: <span th:text="${participant.name}">Иван</span>
                     </p>
                 </div>
-                <a th:if="${returnTo != null}" class="btn btn-outline-secondary btn-sm" th:href="${returnTo}">Отмена</a>
-                <a th:unless="${returnTo != null}" class="btn btn-outline-secondary btn-sm"
+                <a class="btn btn-outline-secondary btn-sm"
                    th:href="@{/participants/{id}(id=${participantId})}">К участнику</a>
             </div>
 
@@ -54,6 +53,7 @@
 
                 <div class="d-flex gap-2">
                     <button type="submit" class="btn btn-primary">Сохранить платёж</button>
+                    <a th:if="${cancelUrl != null}" class="btn btn-outline-secondary" th:href="${cancelUrl}">Отмена</a>
                 </div>
             </form>
         </div>

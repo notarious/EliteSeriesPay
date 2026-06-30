@@ -1,5 +1,6 @@
 package com.eliteseriespay.service;
 
+import com.eliteseriespay.domain.ApplicationSettings;
 import com.eliteseriespay.repository.ApplicationSettingsRepository;
 import com.eliteseriespay.repository.ParticipantRepository;
 import com.eliteseriespay.repository.PaymentRepository;
@@ -36,5 +37,7 @@ public class ApplicationResetService {
         projectRepository.deleteAllInBatch();
         participantRepository.deleteAllInBatch();
         applicationSettingsRepository.deleteAllInBatch();
+        applicationSettingsRepository.save(
+                new ApplicationSettings(ApplicationSettings.DEFAULT_VK_DONUT_FEE_PERCENT));
     }
 }

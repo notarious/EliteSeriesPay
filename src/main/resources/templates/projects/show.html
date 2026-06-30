@@ -97,8 +97,9 @@
                 </td>
                 <th:block th:replace="~{fragments/membership-billing-cells :: cells(
                     row=${row},
-                    paymentUrl=@{/participants/{participantId}/payments/new(participantId=${row.participant.id}, projectId=${project.id})},
+                    paymentUrl=@{/participants/{participantId}/payments/new(participantId=${row.participant.id}, projectId=${project.id}, returnTo=${participantsNavigation.listUrl()})},
                     removeUrl=@{/projects/{projectId}/participants/{participantId}/remove(projectId=${project.id}, participantId=${row.participant.id})},
+                    filterFormParams=${participantsNavigation.formParams()},
                     extraActions=~{::project-participant-actions(row=${row})}
                 )}"/>
             </tr>

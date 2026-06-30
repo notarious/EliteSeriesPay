@@ -2,12 +2,15 @@ package com.eliteseriespay.web.controllers;
 
 import com.eliteseriespay.domain.Participant;
 import com.eliteseriespay.domain.BillingMode;
+import com.eliteseriespay.billing.MembershipPaymentStatusFilter;
 import com.eliteseriespay.exception.NotFoundException;
 import com.eliteseriespay.exception.ValidationException;
 import com.eliteseriespay.membership.MembershipAddResult;
 import com.eliteseriespay.service.ProjectMembershipService;
 import com.eliteseriespay.validation.ValidationError;
 import com.eliteseriespay.web.FormErrorMapper;
+import com.eliteseriespay.web.ProjectParticipantsFilter;
+import com.eliteseriespay.web.ProjectParticipantsNavigation;
 import com.eliteseriespay.web.form.ExistingParticipantForm;
 import com.eliteseriespay.web.form.ParticipantEditForm;
 import com.eliteseriespay.web.form.ProjectNewParticipantForm;
@@ -21,6 +24,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.util.UriComponentsBuilder;
 
 @Controller
@@ -145,7 +149,10 @@ public class ProjectParticipantController {
     }
 
     @PostMapping("/{participantId}/remove")
-    public String remove(@PathVariable Long projectId, @PathVariable Long participantId) {
+    public String remove(@PathVariable Long projectId,
+                         @PathVariable Long participantId,
+                         @RequestParam(required = false) BillingMode billingMode,
+                         @RequestParam(required = false) MembershipPaymentStatusFilter paymentStatus) {
         try {
             projectMembershipService.removeFromProject(projectId, participantId);
         } catch (ValidationException ex) {
@@ -154,7 +161,8 @@ public class ProjectParticipantController {
             }
         }
 
-        return "redirect:/projects/" + projectId;
+        return "redirect:" + ProjectParticipantsNavigation.listUrl(
+                projectId, ProjectParticipantsNavigation.filterFromParams(billingMode, paymentStatus));
     }
 
     @ExceptionHandler(NotFoundException.class)
@@ -172,7 +180,7 @@ public class ProjectParticipantController {
 
     private String resolveAddResultRedirect(Long projectId, MembershipAddResult result) {
         if (result.requiresInitialPayment()) {
-            String returnTo = "/projects/" + projectId;
+            String returnTo = ProjectParticipantsNavigation.listUrl(projectId, ProjectParticipantsFilter.empty());
             String redirectUrl = UriComponentsBuilder
                     .fromPath("/participants/" + result.participantId() + "/payments/new")
                     .queryParam("initialMembership", true)

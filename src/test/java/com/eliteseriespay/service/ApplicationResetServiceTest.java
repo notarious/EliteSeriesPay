@@ -116,7 +116,8 @@ class ApplicationResetServiceTest {
         }
 
         if (applicationSettingsRepository.count() == 0) {
-            applicationSettingsRepository.save(new ApplicationSettings(10));
+            applicationSettingsRepository.save(
+                    new ApplicationSettings(ApplicationSettings.DEFAULT_VK_DONUT_FEE_PERCENT));
         }
     }
 
@@ -134,7 +135,10 @@ class ApplicationResetServiceTest {
         assertThat(projectMembershipRepository.count()).isZero();
         assertThat(projectRepository.count()).isZero();
         assertThat(participantRepository.count()).isZero();
-        assertThat(applicationSettingsRepository.count()).isZero();
+        assertThat(applicationSettingsRepository.count()).isEqualTo(1);
+        assertThat(applicationSettingsRepository.findById(ApplicationSettings.SINGLETON_ID))
+                .map(ApplicationSettings::getVkDonutFeePercent)
+                .contains(ApplicationSettings.DEFAULT_VK_DONUT_FEE_PERCENT);
     }
 
     @Test

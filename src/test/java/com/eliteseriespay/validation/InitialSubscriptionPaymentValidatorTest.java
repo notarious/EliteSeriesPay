@@ -6,6 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.eliteseriespay.domain.PaymentCurrency;
 import com.eliteseriespay.domain.Project;
 import com.eliteseriespay.exception.ValidationException;
+import com.eliteseriespay.format.AmountFormatter;
 import com.eliteseriespay.support.TestEntities;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
@@ -54,6 +55,16 @@ class InitialSubscriptionPaymentValidatorTest {
         assertThatThrownBy(() -> InitialSubscriptionPaymentValidator.validate(
                 expensiveProject, new BigDecimal("100.00"), PaymentCurrency.RUB))
                 .hasMessage(requiredAmountMessage(expensiveProject.getMonthlyFeeRub(), PaymentCurrency.RUB));
+    }
+
+    @Test
+    void validate_messageShowsRequiredAmountForThreeHundredRubProject() {
+        Project project = projectWithFees(new BigDecimal("300.00"), new BigDecimal("4.00"));
+
+        assertThatThrownBy(() -> InitialSubscriptionPaymentValidator.validate(
+                project, new BigDecimal("100.00"), PaymentCurrency.RUB))
+                .hasMessage(
+                        "Для вступления в проект необходимо оплатить полный месячный абонемент: 300,00 ₽");
     }
 
     @Test
@@ -110,9 +121,6 @@ class InitialSubscriptionPaymentValidatorTest {
     private static String requiredAmountMessage(BigDecimal amount, PaymentCurrency currency) {
         return ValidationError.INITIAL_SUBSCRIPTION_PAYMENT_INSUFFICIENT.getMessage()
                 + ": "
-                + amount.stripTrailingZeros().toPlainString()
-                + " "
-                + currency.getDisplayName()
-                + ".";
+                + AmountFormatter.formatWithCurrency(amount, currency);
     }
 }

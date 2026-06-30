@@ -21,7 +21,7 @@
         <div class="d-flex flex-wrap gap-2">
             <a class="btn btn-outline-secondary btn-sm" th:href="@{/participants}">К списку</a>
             <a th:if="${!#lists.isEmpty(activeMemberships)}" class="btn btn-success btn-sm"
-               th:href="@{/participants/{id}/payments/new(id=${participant.id})}">Добавить платёж</a>
+               th:href="@{/participants/{id}/payments/new(id=${participant.id}, returnTo=|/participants/${participant.id}|)}">Добавить платёж</a>
             <a class="btn btn-primary btn-sm"
                th:href="@{/participants/{id}/projects/new(id=${participant.id})}">Добавить в проект</a>
             <a class="btn btn-outline-primary btn-sm"
@@ -104,8 +104,9 @@
                 </td>
                 <th:block th:replace="~{fragments/membership-billing-cells :: cells(
                     row=${view},
-                    paymentUrl=@{/participants/{participantId}/payments/new(participantId=${participant.id}, projectId=${view.project.id})},
+                    paymentUrl=@{/participants/{participantId}/payments/new(participantId=${participant.id}, projectId=${view.project.id}, returnTo=|/participants/${participant.id}|)},
                     removeUrl=@{/participants/{participantId}/projects/{projectId}/remove(participantId=${participant.id}, projectId=${view.project.id})},
+                    filterFormParams=${null},
                     extraActions=~{}
                 )}"/>
             </tr>
