@@ -27,6 +27,10 @@ public final class DesktopEnvironment {
     }
 
     public static boolean isSingleInstanceEnabledPreSpring() {
+        return isPackagedDesktopTargetPreSpring();
+    }
+
+    public static boolean isPackagedDesktopTargetPreSpring() {
         return ApplicationDataDirectory.isPackagedPreSpring()
                 && ApplicationDataDirectory.isWindows();
     }

@@ -77,6 +77,11 @@ try {
         throw "jpackage was not found. Install JDK 21 and ensure jpackage is on PATH."
     }
 
+    $IconPath = Join-Path $ProjectRoot "installer\windows\EliteSeriesPay.ico"
+    if (-not (Test-Path $IconPath)) {
+        throw "Application icon not found: $IconPath"
+    }
+
     $JPackageArgs = @(
         "--type", "msi",
         "--name", $AppName,
@@ -87,6 +92,7 @@ try {
         "--main-jar", $MainJar,
         "--main-class", $SpringBootMainClass,
         "--dest", $OutputDir,
+        "--icon", $IconPath,
         "--install-dir", $InstallDirName,
         "--win-menu",
         "--win-menu-group", $AppName,

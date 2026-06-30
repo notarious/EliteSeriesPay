@@ -1,6 +1,7 @@
 package com.eliteseriespay;
 
 import com.eliteseriespay.config.ApplicationDataDirectory;
+import com.eliteseriespay.desktop.ApplicationIcon;
 import com.eliteseriespay.desktop.DesktopEnvironment;
 import com.eliteseriespay.desktop.DesktopSupport;
 import com.eliteseriespay.desktop.SingleInstanceLock;
@@ -20,6 +21,10 @@ public class EliteSeriesPayApplication {
     public static void main(String[] args) {
         ApplicationDataDirectory.ensurePackagedModeInitialized();
         ApplicationDataDirectory.logPackagedStartupPreSpring();
+
+        if (DesktopEnvironment.isPackagedDesktopTargetPreSpring()) {
+            ApplicationIcon.applyToDesktopTaskbarIfSupported();
+        }
 
         if (DesktopEnvironment.isSingleInstanceEnabledPreSpring()) {
             instanceLock = SingleInstanceLock.forDataDirectory(DesktopEnvironment.resolveDataDirectoryPreSpring());

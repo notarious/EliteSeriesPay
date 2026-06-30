@@ -87,8 +87,9 @@ The script:
 2. verifies the Spring Boot executable JAR (`Main-Class: org.springframework.boot.loader.launch.JarLauncher`)
 3. copies only the executable JAR into `target\jpackage-input`
 4. invokes `jpackage --type msi` to create an MSI with a bundled runtime
-5. passes `-Deliteseriespay.packaged=true` and `-Djava.awt.headless=false` for packaged desktop behavior (system tray, browser launch)
-6. uses a fixed `--win-upgrade-uuid` so a newer MSI replaces only application files in `C:\Program Files\EliteSeriesPay\`
+5. embeds the application icon from `installer\windows\EliteSeriesPay.ico` via `--icon` (desktop shortcut, Start Menu, executable, and taskbar)
+6. passes `-Deliteseriespay.packaged=true` and `-Djava.awt.headless=false` for packaged desktop behavior (system tray, browser launch)
+7. uses a fixed `--win-upgrade-uuid` so a newer MSI replaces only application files in `C:\Program Files\EliteSeriesPay\`
 
 ## Upgrading an existing installation
 
@@ -141,6 +142,7 @@ After installation:
 - launcher config: `C:\Program Files\EliteSeriesPay\app\EliteSeriesPay.cfg`
 - Start Menu shortcut: `EliteSeriesPay`
 - Desktop shortcut: created by default (disable with `-SkipDesktopShortcut`)
+- application icon: custom icon from `installer\windows\EliteSeriesPay.ico` (not the default Java icon)
 - user data: `%LOCALAPPDATA%\EliteSeriesPay\`
 
 The installed `EliteSeriesPay.cfg` must contain:
