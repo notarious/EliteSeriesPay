@@ -10,9 +10,9 @@
         <div class="col-lg-8">
             <div class="d-flex justify-content-between align-items-start mb-3">
                 <div>
-                    <h1 class="h3 mb-1" th:text="${initialMembership} ? 'Первый платёж абонемента' : 'Новый платёж'">Новый платёж</h1>
+                    <h1 class="h3 mb-1" th:text="${initialMembership} ? 'Первый платёж абонемента' : 'Новый платёж'"></h1>
                     <p class="text-muted small mb-0">
-                        Участник: <span th:text="${participant.name}">Иван</span>
+                        Участник: <span th:text="${participant.name}"></span>
                     </p>
                 </div>
                 <a class="btn btn-outline-secondary btn-sm"
@@ -22,7 +22,7 @@
             <div th:if="${initialMembership}" class="alert alert-info py-2">
                 Для добавления участника в проект с абонементом необходим первый платёж.
                 Проект:
-                <strong th:text="${initialMembershipProject.name}">Пример проекта</strong>
+                <strong th:text="${initialMembershipProject.name}"></strong>
             </div>
 
             <form th:action="@{/participants/{id}/payments(id=${participantId})}"
@@ -33,7 +33,7 @@
                 <div class="mb-3" th:if="${initialMembership}">
                     <label class="form-label">Проект</label>
                     <input type="hidden" th:field="*{projectId}">
-                    <p class="form-control-plaintext mb-0" th:text="${initialMembershipProject.name}">Пример проекта</p>
+                    <p class="form-control-plaintext mb-0" th:text="${initialMembershipProject.name}"></p>
                 </div>
 
                 <div class="mb-3" th:unless="${initialMembership}">
@@ -43,7 +43,7 @@
                         <option value="">Выберите проект</option>
                         <option th:each="membership : ${activeMemberships}"
                                 th:value="${membership.project.id}"
-                                th:text="${membership.project.name}">Пример проекта</option>
+                                th:text="${membership.project.name}"></option>
                     </select>
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('projectId')}"
                          th:errors="*{projectId}"></div>

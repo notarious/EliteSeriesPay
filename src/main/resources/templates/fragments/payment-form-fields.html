@@ -17,7 +17,7 @@
             <option value="">Выберите источник</option>
             <option th:each="paymentSource : ${T(com.eliteseriespay.domain.PaymentSource).values()}"
                     th:value="${paymentSource.name()}"
-                    th:text="${paymentSource.displayName}">VK Donut</option>
+                    th:text="${paymentSource.displayName}"></option>
         </select>
         <div class="invalid-feedback" th:if="${#fields.hasErrors('source')}"
              th:errors="*{source}"></div>
@@ -39,7 +39,7 @@
                 <option value="">Выберите валюту</option>
                 <option th:each="paymentCurrency : ${T(com.eliteseriespay.domain.PaymentCurrency).values()}"
                         th:value="${paymentCurrency.name()}"
-                        th:text="${paymentCurrency.displayName}">₽</option>
+                        th:text="${paymentCurrency.displayName}"></option>
             </select>
             <div class="invalid-feedback" th:if="${#fields.hasErrors('currency')}"
                  th:errors="*{currency}"></div>

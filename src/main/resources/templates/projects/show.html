@@ -2,25 +2,22 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title th:text="${project.name} + ' — Проекты от Ave Elite'">Проект — Проекты от Ave Elite</title>
+    <title th:text="${project.name} + ' — Проекты от Ave Elite'"></title>
 </head>
 <body>
 <div th:fragment="content">
     <div class="page-header d-flex justify-content-between align-items-start">
         <div>
-            <h1 class="h3 mb-1" th:text="${project.name}">Пример проекта</h1>
+            <h1 class="h3 mb-1" th:text="${project.name}"></h1>
             <p class="page-subtitle">
                 Стоимость эпизода:
                 <span th:text="${#numbers.formatDecimal(project.episodeCostRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
-                    1,000.00 ₽
                 </span>
                 · Абонемент:
                 <span th:text="${#numbers.formatDecimal(project.monthlyFeeRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">
-                    500.00 ₽
                 </span>
                 /
                 <span th:text="${#numbers.formatDecimal(project.monthlyFeeEur, 1, 'COMMA', 2, 'POINT')} + ' €'">
-                    5.00 €
                 </span>
             </p>
         </div>
@@ -50,7 +47,7 @@
                 <option th:each="mode : ${billingModes}"
                         th:value="${mode.name()}"
                         th:selected="${selectedBillingMode == mode}"
-                        th:text="${mode.displayName}">Абонемент</option>
+                        th:text="${mode.displayName}"></option>
             </select>
         </div>
         <div class="col-md-3 col-lg-2">
@@ -62,7 +59,6 @@
                         th:value="${filter.name()}"
                         th:selected="${selectedPaymentStatus == filter}"
                         th:text="${filter.displayName}">
-                    Активные
                 </option>
             </select>
         </div>
@@ -83,7 +79,7 @@
                 <th scope="col">Имя</th>
                 <th scope="col">Тип оплаты</th>
                 <th scope="col">Оплачен до</th>
-                <th scope="col" th:text="${currentMonthPaymentColumnTitle}">Оплата за июль</th>
+                <th scope="col" th:text="${currentMonthPaymentColumnTitle}"></th>
                 <th scope="col">Статус оплаты</th>
                 <th scope="col">Аванс</th>
                 <th scope="col" class="text-end">Действия</th>
@@ -93,7 +89,7 @@
             <tr th:each="row : ${participants}">
                 <td>
                     <a th:href="@{/participants/{id}(id=${row.participant.id})}"
-                       th:text="${row.participant.name}">Иван</a>
+                       th:text="${row.participant.name}"></a>
                 </td>
                 <th:block th:replace="~{fragments/membership-billing-cells :: cells(
                     row=${row},
@@ -109,24 +105,23 @@
 
     <div class="card summary-card mt-4">
         <div class="card-body">
-            <h2 class="section-title mb-2" th:text="${monthlySummary.monthLabel}">Июнь 2026</h2>
+            <h2 class="section-title mb-2" th:text="${monthlySummary.monthLabel}"></h2>
             <p th:if="${!monthlySummary.hasPayments()}" class="text-muted small mb-0">
                 За текущий месяц поступлений нет.
             </p>
             <div th:if="${monthlySummary.hasPayments()}" class="small text-muted mb-0">
                 <p class="mb-1">
                     Получено чистыми:
-                    <span th:text="${monthlySummary.totalNetRubFormatted}">31 800,00 ₽</span>
+                    <span th:text="${monthlySummary.totalNetRubFormatted}"></span>
                 </p>
                 <p class="mb-1">
                     Стоимость серии:
-                    <span th:text="${monthlySummary.episodeCostRubFormatted}">4 500,00 ₽</span>
+                    <span th:text="${monthlySummary.episodeCostRubFormatted}"></span>
                 </p>
-                <p class="mb-1" th:text="${monthlySummary.episodesFundedLine}">Собрано на 7 серий.</p>
+                <p class="mb-1" th:text="${monthlySummary.episodesFundedLine}"></p>
                 <p class="mb-1" th:if="${monthlySummary.remainingLine != null}"
-                   th:text="${monthlySummary.remainingLine}">Остаток: 300,00 ₽.</p>
+                   th:text="${monthlySummary.remainingLine}"></p>
                 <p class="mb-0" th:text="${monthlySummary.amountToNextEpisodeLine}">
-                    До 8-й серии осталось: 4 200,00 ₽.
                 </p>
             </div>
         </div>

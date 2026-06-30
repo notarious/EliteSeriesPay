@@ -23,6 +23,13 @@ public class ReportFormatter {
         return Character.toUpperCase(label.charAt(0)) + label.substring(1);
     }
 
+    public String formatBillingCollectionSummaryTitle(YearMonth collectionMonth) {
+        YearMonth billingMonth = collectionMonth.plusMonths(1);
+        String monthName = billingMonth.atDay(1).format(
+                DateTimeFormatter.ofPattern("LLLL", Locale.forLanguageTag("ru")));
+        return "Сборы на " + monthName.toLowerCase(Locale.forLanguageTag("ru")) + " " + billingMonth.getYear();
+    }
+
     public String formatCurrentMonthPaymentColumnTitle(YearMonth month) {
         String monthName = month.atDay(1).format(
                 DateTimeFormatter.ofPattern("LLLL", Locale.forLanguageTag("ru")));

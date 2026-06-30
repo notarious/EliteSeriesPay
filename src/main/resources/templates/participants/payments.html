@@ -3,7 +3,6 @@
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
     <title th:text="'История платежей — ' + ${participant.name} + ' — Проекты от Ave Elite'">
-        История платежей — Проекты от Ave Elite
     </title>
 </head>
 <body>
@@ -13,7 +12,7 @@
             <h1 class="h3 mb-1">История платежей</h1>
             <p class="page-subtitle">
                 Участник:
-                <a th:href="@{/participants/{id}(id=${participant.id})}" th:text="${participant.name}">Иван</a>
+                <a th:href="@{/participants/{id}(id=${participant.id})}" th:text="${participant.name}"></a>
             </p>
         </div>
         <div class="d-flex gap-2">
@@ -33,7 +32,7 @@
                 <option th:each="project : ${filterProjects}"
                         th:selected="${historyFilter.projectId != null and historyFilter.projectId == project.id}"
                         th:text="${project.name}"
-                        th:value="${project.id}">Пример проекта</option>
+                        th:value="${project.id}">...</option>
             </select>
         </div>
         <div class="col-md-3 col-lg-2">
@@ -43,7 +42,7 @@
                 <option th:each="paymentSource : ${T(com.eliteseriespay.domain.PaymentSource).values()}"
                         th:value="${paymentSource.name()}"
                         th:selected="${historyFilter.source == paymentSource}"
-                        th:text="${paymentSource.displayName}">VK Donut</option>
+                        th:text="${paymentSource.displayName}"></option>
             </select>
         </div>
         <div class="col-md-3 col-lg-2">
@@ -79,7 +78,7 @@
                 <option th:each="allowedSize : ${allowedPageSizes}"
                         th:selected="${allowedSize == historyFilter.pageSize}"
                         th:text="${allowedSize}"
-                        th:value="${allowedSize}">25</option>
+                        th:value="${allowedSize}">...</option>
             </select>
         </div>
         <input name="page" type="hidden" value="0">
@@ -98,11 +97,10 @@
     <div th:if="${paymentsPage.totalElements > 0}">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="text-muted small"
-                 th:text="|Найдено: ${paymentsPage.totalElements}|">Найдено: 0</div>
+                 th:text="|Найдено: ${paymentsPage.totalElements}|"></div>
             <div class="text-muted small"
                  th:if="${paymentsPage.totalPages > 1}"
                  th:text="|Страница ${paymentsPage.number + 1} из ${paymentsPage.totalPages}|">
-                Страница 1 из 1
             </div>
         </div>
 
@@ -126,28 +124,28 @@
                 <tbody>
                 <tr th:each="payment : ${paymentsPage.content}"
                     th:classappend="${payment.status.name() == 'VOIDED'} ? 'text-muted' : ''">
-                    <td th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy')}">01.01.2026</td>
+                    <td th:text="${#temporals.format(payment.paymentDate, 'dd.MM.yyyy')}"></td>
                     <td>
                         <a th:href="@{/projects/{id}(id=${payment.project.id})}"
-                           th:text="${payment.project.name}">Пример проекта</a>
+                           th:text="${payment.project.name}"></a>
                     </td>
-                    <td th:text="${payment.source.displayName}">VK Donut (-10%)</td>
+                    <td th:text="${payment.source.displayName}"></td>
                     <td class="payment-history-status">
-                        <th:block th:replace="~{fragments/payment-status-badge :: badge(${payment.status})}">Активен</th:block>
+                        <th:block th:replace="~{fragments/payment-status-badge :: badge(${payment.status})}"></th:block>
                     </td>
                     <td class="text-end">
-                        <span th:text="${#numbers.formatDecimal(payment.amountOriginal, 1, 'COMMA', 2, 'POINT')}">100.00</span>
-                        <span th:text="' ' + ${payment.currency.displayName}"> ₽</span>
+                        <span th:text="${#numbers.formatDecimal(payment.amountOriginal, 1, 'COMMA', 2, 'POINT')}"></span>
+                        <span th:text="' ' + ${payment.currency.displayName}"></span>
                     </td>
                     <td class="text-end"
-                        th:text="${#numbers.formatDecimal(payment.exchangeRate, 1, 'COMMA', 4, 'POINT')}">1.0000</td>
+                        th:text="${#numbers.formatDecimal(payment.exchangeRate, 1, 'COMMA', 4, 'POINT')}"></td>
                     <td class="text-end"
-                        th:text="${#numbers.formatDecimal(payment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">100.00 ₽</td>
-                    <td class="text-end" th:text="${payment.feePercent} + '%'">10%</td>
+                        th:text="${#numbers.formatDecimal(payment.amountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'"></td>
+                    <td class="text-end" th:text="${payment.feePercent} + '%'"></td>
                     <td class="text-end"
-                        th:text="${#numbers.formatDecimal(payment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'">90.00 ₽</td>
+                        th:text="${#numbers.formatDecimal(payment.netAmountRub, 1, 'COMMA', 2, 'POINT')} + ' ₽'"></td>
                     <td class="payment-history-comment"
-                        th:text="${payment.comment != null ? payment.comment : '—'}">—</td>
+                        th:text="${payment.comment != null ? payment.comment : '—'}"></td>
                     <td class="text-end payment-history-actions">
                         <div th:if="${payment.status.name() == 'ACTIVE'}" class="d-inline-flex gap-1 align-items-center">
                             <a class="btn btn-sm btn-outline-primary"
@@ -191,9 +189,9 @@
                     <a class="page-link"
                        th:href="${historyNavigation.listUrl(pageNumber)}"
                        th:text="${pageNumber + 1}"
-                       th:unless="${pageNumber == paymentsPage.number}">1</a>
+                       th:unless="${pageNumber == paymentsPage.number}"></a>
                     <span class="page-link" th:if="${pageNumber == paymentsPage.number}"
-                          th:text="${pageNumber + 1}">1</span>
+                          th:text="${pageNumber + 1}"></span>
                 </li>
 
                 <li class="page-item" th:classappend="${paymentsPage.last} ? 'disabled'">

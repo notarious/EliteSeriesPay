@@ -62,7 +62,10 @@ public class ProjectReportService {
 
     @Transactional(readOnly = true)
     public ProjectMonthlySummaryView buildCurrentMonthSummary(Long projectId) {
-        return ProjectMonthlySummaryView.from(buildMonthlyReport(projectId, YearMonth.now()));
+        YearMonth currentMonth = YearMonth.now();
+        ProjectMonthlyReport report = buildMonthlyReport(projectId, currentMonth);
+        String summaryTitle = reportFormatter.formatBillingCollectionSummaryTitle(currentMonth);
+        return ProjectMonthlySummaryView.from(report, summaryTitle);
     }
 
     private MonthlyPaymentTotals loadTotals(Long projectId, LocalDate dateFrom, LocalDate dateTo) {

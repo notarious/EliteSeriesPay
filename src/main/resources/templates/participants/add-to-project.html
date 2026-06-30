@@ -31,7 +31,7 @@
                         <option value="">Выберите проект</option>
                         <option th:each="project : ${availableProjects}"
                                 th:value="${project.id}"
-                                th:text="${project.name}">Пример проекта</option>
+                                th:text="${project.name}"></option>
                     </select>
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('projectId')}"
                          th:errors="*{projectId}"></div>
@@ -43,7 +43,7 @@
                             th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
                         <option th:each="mode : ${billingModes}"
                                 th:value="${mode.name()}"
-                                th:text="${mode.displayName}">Абонемент</option>
+                                th:text="${mode.displayName}"></option>
                     </select>
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
                          th:errors="*{billingMode}"></div>

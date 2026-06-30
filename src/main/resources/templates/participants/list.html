@@ -26,7 +26,7 @@
                 <option th:each="allowedSize : ${allowedPageSizes}"
                         th:selected="${allowedSize == pageSize}"
                         th:text="${allowedSize}"
-                        th:value="${allowedSize}">50</option>
+                        th:value="${allowedSize}">...</option>
             </select>
         </div>
         <input name="page" type="hidden" value="0">
@@ -47,11 +47,10 @@
     <div th:unless="${participantsPage.totalElements == 0}">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div class="text-muted small"
-                 th:text="|Найдено: ${participantsPage.totalElements}|">Найдено: 0</div>
+                 th:text="|Найдено: ${participantsPage.totalElements}|"></div>
             <div class="text-muted small"
                  th:if="${participantsPage.totalPages > 1}"
                  th:text="|Страница ${participantsPage.number + 1} из ${participantsPage.totalPages}|">
-                Страница 1 из 1
             </div>
         </div>
 
@@ -70,13 +69,12 @@
                 <tr th:each="participant : ${participantsPage.content}">
                     <td>
                         <a th:href="@{/participants/{id}(id=${participant.id})}"
-                           th:text="${participant.name}">Иван</a>
+                           th:text="${participant.name}"></a>
                     </td>
-                    <td th:text="${participant.vkId}">12345</td>
-                    <td th:text="${participant.comment != null ? participant.comment : '—'}">—</td>
+                    <td th:text="${participant.vkId}"></td>
+                    <td th:text="${participant.comment != null ? participant.comment : '—'}"></td>
                     <td class="text-end"
                         th:text="${activeProjectCounts.containsKey(participant.id) ? activeProjectCounts.get(participant.id) : 0}">
-                        0
                     </td>
                     <td class="text-end">
                         <div class="d-inline-flex gap-1">
@@ -114,9 +112,9 @@
                     <a class="page-link"
                        th:href="@{/participants(q=${searchQuery}, page=${pageNumber}, size=${pageSize})}"
                        th:text="${pageNumber + 1}"
-                       th:unless="${pageNumber == participantsPage.number}">1</a>
+                       th:unless="${pageNumber == participantsPage.number}"></a>
                     <span class="page-link" th:if="${pageNumber == participantsPage.number}"
-                          th:text="${pageNumber + 1}">1</span>
+                          th:text="${pageNumber + 1}"></span>
                 </li>
 
                 <li class="page-item" th:classappend="${participantsPage.last} ? 'disabled'">

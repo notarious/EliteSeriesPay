@@ -3,9 +3,9 @@
 <body>
 <span th:fragment="badgeFromVoided(voided, label)"
       th:class="${voided} ? 'badge rounded-pill text-bg-secondary' : 'badge rounded-pill text-bg-success'"
-      th:text="${label}">Активен</span>
+      th:text="${label}"></span>
 
 <span th:fragment="badge(status)"
-      th:replace="~{fragments/payment-status-badge :: badgeFromVoided(${status.name() == 'VOIDED'}, ${status.displayName})}">Активен</span>
+      th:replace="~{fragments/payment-status-badge :: badgeFromVoided(${status.name() == 'VOIDED'}, ${status.displayName})}"></span>
 </body>
 </html>

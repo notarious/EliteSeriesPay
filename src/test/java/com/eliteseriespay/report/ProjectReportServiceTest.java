@@ -178,6 +178,15 @@ class ProjectReportServiceTest {
         assertThat(summary.remainingLine()).isEqualTo("Остаток: " + report.remainingRubFormatted() + ".");
     }
 
+    @Test
+    void buildCurrentMonthSummary_usesBillingPeriodTitle() {
+        ProjectMonthlySummaryView summary = projectReportService.buildCurrentMonthSummary(project.getId());
+
+        YearMonth currentMonth = YearMonth.now();
+        String expectedTitle = new ReportFormatter().formatBillingCollectionSummaryTitle(currentMonth);
+        assertThat(summary.monthLabel()).isEqualTo(expectedTitle);
+    }
+
     private void savePayment(Participant participant,
                              LocalDate paymentDate,
                              PaymentSource source,

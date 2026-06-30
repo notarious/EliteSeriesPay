@@ -9,9 +9,13 @@ public record ProjectMonthlySummaryView(String monthLabel,
                                         String amountToNextEpisodeLine) {
 
     public static ProjectMonthlySummaryView from(ProjectMonthlyReport report) {
+        return from(report, report.monthLabel());
+    }
+
+    public static ProjectMonthlySummaryView from(ProjectMonthlyReport report, String monthLabel) {
         if (!report.hasPayments()) {
             return new ProjectMonthlySummaryView(
-                    report.monthLabel(),
+                    monthLabel,
                     false,
                     null,
                     null,
@@ -34,7 +38,7 @@ public record ProjectMonthlySummaryView(String monthLabel,
         }
 
         return new ProjectMonthlySummaryView(
-                report.monthLabel(),
+                monthLabel,
                 true,
                 report.totalNetRubFormatted(),
                 report.episodeCostRubFormatted(),

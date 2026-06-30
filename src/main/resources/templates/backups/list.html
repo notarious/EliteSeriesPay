@@ -14,16 +14,14 @@
     </div>
 
     <div class="alert alert-success flash-message py-2" th:if="${successMessage}" th:text="${successMessage}">
-        Резервная копия создана.
     </div>
 
     <div class="alert alert-danger flash-message py-2" th:if="${errorMessage}" th:text="${errorMessage}">
-        Ошибка резервного копирования.
     </div>
 
     <p class="text-muted small mb-3">
         Для восстановления остановите приложение и замените файл
-        <span th:text="${databaseFileName}">eliteseriespay.db</span>
+        <span th:text="${databaseFileName}"></span>
         нужной резервной копией.
     </p>
 
@@ -44,9 +42,9 @@
             </thead>
             <tbody>
             <tr th:each="backup : ${backups}">
-                <td th:text="${backup.fileName}">eliteseriespay-2026-06-26-12-00-00.db</td>
-                <td th:text="${backup.createdAtFormatted}">26.06.2026 12:00:00</td>
-                <td class="text-end" th:text="${backup.sizeFormatted}">1.2 МБ</td>
+                <td th:text="${backup.fileName}"></td>
+                <td th:text="${backup.createdAtFormatted}"></td>
+                <td class="text-end" th:text="${backup.sizeFormatted}"></td>
                 <td class="text-end">
                     <a class="btn btn-sm btn-outline-primary"
                        th:href="@{/backups/{fileName}/download(fileName=${backup.fileName})}"

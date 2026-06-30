@@ -2,7 +2,7 @@
 <html lang="ru" xmlns:th="http://www.thymeleaf.org"
       th:replace="~{fragments/layout :: layout(~{::title}, ~{::content})}">
 <head>
-    <title th:text="'Отчёты — ' + ${project.name} + ' — Проекты от Ave Elite'">Отчёты — Проекты от Ave Elite</title>
+    <title th:text="'Отчёты — ' + ${project.name} + ' — Проекты от Ave Elite'"></title>
 </head>
 <body>
 <div th:fragment="content">
@@ -11,7 +11,7 @@
             <h1 class="h3 mb-1">Отчёты</h1>
             <p class="page-subtitle">
                 Проект:
-                <a th:href="@{/projects/{id}(id=${project.id})}" th:text="${project.name}">Пример проекта</a>
+                <a th:href="@{/projects/{id}(id=${project.id})}" th:text="${project.name}"></a>
             </p>
         </div>
         <a class="btn btn-outline-secondary btn-sm" th:href="@{/projects/{id}(id=${project.id})}">К проекту</a>
@@ -26,7 +26,6 @@
                         th:value="${m}"
                         th:selected="${m == selectedMonth}"
                         th:text="${#temporals.format(T(java.time.YearMonth).of(selectedYear, m).atDay(1), 'LLLL')}">
-                    Июнь
                 </option>
             </select>
         </div>
@@ -40,7 +39,7 @@
         </div>
     </form>
 
-    <h2 class="section-title" th:text="${report.monthLabel}">Июнь 2026</h2>
+    <h2 class="section-title" th:text="${report.monthLabel}"></h2>
 
     <div th:if="${!report.hasPayments()}" class="empty-state" role="status">
         <i class="bi bi-bar-chart empty-state-icon" aria-hidden="true"></i>
@@ -53,7 +52,7 @@
                 <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Получено</div>
-                        <div class="fw-semibold" th:text="${report.totalGrossRubFormatted}">35 000,00 ₽</div>
+                        <div class="fw-semibold" th:text="${report.totalGrossRubFormatted}"></div>
                     </div>
                 </div>
             </div>
@@ -61,7 +60,7 @@
                 <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Чистыми</div>
-                        <div class="fw-semibold" th:text="${report.totalNetRubFormatted}">31 800,00 ₽</div>
+                        <div class="fw-semibold" th:text="${report.totalNetRubFormatted}"></div>
                     </div>
                 </div>
             </div>
@@ -69,7 +68,7 @@
                 <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Серий оплачено</div>
-                        <div class="fw-semibold" th:text="${report.episodeFunding.episodesFunded()}">7</div>
+                        <div class="fw-semibold" th:text="${report.episodeFunding.episodesFunded()}"></div>
                     </div>
                 </div>
             </div>
@@ -77,7 +76,7 @@
                 <div class="card summary-card h-100">
                     <div class="card-body py-2 px-3">
                         <div class="text-muted small">Остаток</div>
-                        <div class="fw-semibold" th:text="${report.remainingRubFormatted}">300,00 ₽</div>
+                        <div class="fw-semibold" th:text="${report.remainingRubFormatted}"></div>
                     </div>
                 </div>
             </div>
@@ -96,10 +95,10 @@
                 </thead>
                 <tbody>
                 <tr th:each="row : ${report.sourceBreakdown}">
-                    <td th:text="${row.sourceLabel}">VK Donut (-10%)</td>
-                    <td class="text-end" th:text="${row.paymentCount}">5</td>
-                    <td class="text-end" th:text="${row.grossAmountRub}">10 000,00 ₽</td>
-                    <td class="text-end" th:text="${row.netAmountRub}">9 000,00 ₽</td>
+                    <td th:text="${row.sourceLabel}"></td>
+                    <td class="text-end" th:text="${row.paymentCount}"></td>
+                    <td class="text-end" th:text="${row.grossAmountRub}"></td>
+                    <td class="text-end" th:text="${row.netAmountRub}"></td>
                 </tr>
                 </tbody>
             </table>
@@ -118,9 +117,9 @@
                     </thead>
                     <tbody>
                     <tr th:each="row : ${report.participantContributions}">
-                        <td th:text="${row.participantName}">Иван</td>
-                        <td th:text="${row.billingModeLabel}">Абонемент</td>
-                        <td class="text-end" th:text="${row.netContributionRub}">5 000,00 ₽</td>
+                        <td th:text="${row.participantName}"></td>
+                        <td th:text="${row.billingModeLabel}"></td>
+                        <td class="text-end" th:text="${row.netContributionRub}"></td>
                     </tr>
                     </tbody>
                 </table>

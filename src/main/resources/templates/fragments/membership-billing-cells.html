@@ -2,27 +2,27 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <body>
 <th:block th:fragment="cells(row, paymentUrl, removeUrl, extraActions, filterFormParams)">
-    <td th:text="${row.billingModeLabel}">Абонемент</td>
+    <td th:text="${row.billingModeLabel}"></td>
     <td>
         <span th:if="${row.paidUntilMonth != null}"
-              th:text="${#temporals.format(row.paidUntilMonth.atDay(1), 'MM.yyyy')}">06.2026</span>
+              th:text="${#temporals.format(row.paidUntilMonth.atDay(1), 'MM.yyyy')}"></span>
     </td>
     <td>
         <span th:if="${row.currentMonthPayment != null}"
               th:class="${row.currentMonthPayment.cssClass}"
-              th:text="${row.currentMonthPayment.label}">✅ Оплачено</span>
+              th:text="${row.currentMonthPayment.label}"></span>
     </td>
     <td>
         <span th:if="${row.statusCssClass != null and !#strings.isEmpty(row.statusCssClass)}"
               th:class="${row.statusCssClass}"
-              th:text="${row.paymentStatusLabel}">Активен</span>
+              th:text="${row.paymentStatusLabel}"></span>
     </td>
     <td>
         <span th:if="${row.partialPaymentInfo != null}"
               th:with="partial=${row.partialPaymentInfo}">
-            <span th:text="${#numbers.formatDecimal(partial.advanceAmount, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
+            <span th:text="${#numbers.formatDecimal(partial.advanceAmount, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}"></span>
             <span class="text-muted">· До продления:</span>
-            <span th:text="${#numbers.formatDecimal(partial.remainingUntilRenewal, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}">50.00 RUB</span>
+            <span th:text="${#numbers.formatDecimal(partial.remainingUntilRenewal, 1, 'COMMA', 2, 'POINT')} + ' ' + ${partial.advanceCurrency}"></span>
         </span>
     </td>
     <td class="text-end">

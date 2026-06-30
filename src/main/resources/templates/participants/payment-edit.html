@@ -12,7 +12,7 @@
                 <div>
                     <h1 class="h3 mb-1">Изменение платежа</h1>
                     <p class="text-muted small mb-0">
-                        Участник: <span th:text="${participant.name}">Иван</span>
+                        Участник: <span th:text="${participant.name}"></span>
                     </p>
                 </div>
                 <a th:if="${projectHistoryNavigation != null}" class="btn btn-outline-secondary btn-sm"
@@ -30,7 +30,7 @@
                         <option value="">Выберите проект</option>
                         <option th:each="membership : ${activeMemberships}"
                                 th:value="${membership.project.id}"
-                                th:text="${membership.project.name}">Пример проекта</option>
+                                th:text="${membership.project.name}"></option>
                     </select>
                     <div class="invalid-feedback" th:if="${#fields.hasErrors('projectId')}"
                          th:errors="*{projectId}"></div>

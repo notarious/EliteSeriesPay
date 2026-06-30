@@ -46,7 +46,6 @@
                                 <option th:each="participant : ${availableParticipants}"
                                         th:value="${participant.id}"
                                         th:text="${participant.name + ' (' + participant.vkId + ')'}">
-                                    Иван (12345)
                                 </option>
                             </select>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('participantId')}"
@@ -59,7 +58,7 @@
                                     th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
                                 <option th:each="mode : ${billingModes}"
                                         th:value="${mode.name()}"
-                                        th:text="${mode.displayName}">Абонемент</option>
+                                        th:text="${mode.displayName}"></option>
                             </select>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
                                  th:errors="*{billingMode}"></div>
@@ -97,7 +96,7 @@
                                     th:classappend="${#fields.hasErrors('billingMode')} ? 'is-invalid'">
                                 <option th:each="mode : ${billingModes}"
                                         th:value="${mode.name()}"
-                                        th:text="${mode.displayName}">Абонемент</option>
+                                        th:text="${mode.displayName}"></option>
                             </select>
                             <div class="invalid-feedback" th:if="${#fields.hasErrors('billingMode')}"
                                  th:errors="*{billingMode}"></div>
