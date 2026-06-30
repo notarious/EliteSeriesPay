@@ -4,10 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.env.MockEnvironment;
 
 class ApplicationDataDirectoryTest {
@@ -63,7 +65,7 @@ class ApplicationDataDirectoryTest {
 
     @Test
     void toJdbcSqliteFileUrl_usesAbsolutePath() {
-        Path databaseFile = Path.of("data-dir", "eliteseriespay.db");
+        Path databaseFile = Path.of("data-dir", "data", "eliteseriespay.db");
         String expected = "jdbc:sqlite:" + databaseFile.toAbsolutePath().normalize().toUri() + "?busy_timeout=5000";
 
         assertThat(ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile)).isEqualTo(expected);
@@ -81,22 +83,24 @@ class ApplicationDataDirectoryTest {
 
     @Test
     void toJdbcSqliteFileUrl_canOpenDatabaseFile() throws Exception {
-        Path databaseFile = java.nio.file.Files.createTempDirectory("esp-sqlite-url-test")
+        Path databaseFile = Files.createTempDirectory("esp-sqlite-url-test")
+                .resolve("data")
                 .resolve("eliteseriespay.db");
+        Files.createDirectories(databaseFile.getParent());
 
         try (var connection = java.sql.DriverManager.getConnection(
                 ApplicationDataDirectory.toJdbcSqliteFileUrl(databaseFile))) {
             assertThat(connection).isNotNull();
-            assertThat(java.nio.file.Files.exists(databaseFile)).isTrue();
+            assertThat(Files.exists(databaseFile)).isTrue();
         } finally {
-            java.nio.file.Files.deleteIfExists(databaseFile);
+            Files.deleteIfExists(databaseFile);
         }
     }
 
     @Test
     void toJdbcSqliteFileUrl_avoidsBrokenWindowsDriveLetterUriScheme() {
         String jdbcUrl = ApplicationDataDirectory.toJdbcSqliteFileUrl(
-                Path.of("/tmp/EliteSeriesPay/eliteseriespay.db"));
+                Path.of("/tmp/EliteSeriesPay/data/eliteseriespay.db"));
 
         assertThat(jdbcUrl).startsWith("jdbc:sqlite:file:");
         assertThat(jdbcUrl).doesNotContain("file:C:");
@@ -127,7 +131,11 @@ class ApplicationDataDirectoryTest {
     void databasePathAndBackupsDirectory_areUnderDataDirectory() {
         Path dataDirectory = Path.of("C:\\Users\\test\\AppData\\Local\\EliteSeriesPay");
 
+        assertThat(ApplicationDataDirectory.databaseStorageDirectory(dataDirectory))
+                .isEqualTo(dataDirectory.resolve("data"));
         assertThat(ApplicationDataDirectory.databasePath(dataDirectory))
+                .isEqualTo(dataDirectory.resolve("data").resolve("eliteseriespay.db"));
+        assertThat(ApplicationDataDirectory.legacyDatabasePath(dataDirectory))
                 .isEqualTo(dataDirectory.resolve("eliteseriespay.db"));
         assertThat(ApplicationDataDirectory.backupsDirectory(dataDirectory))
                 .isEqualTo(dataDirectory.resolve("backups"));
@@ -136,19 +144,21 @@ class ApplicationDataDirectoryTest {
     }
 
     @Test
-    void isJPackageApplicationLayout_detectsJarInsideAppDirectory() {
+    void applicationDirectory_resolvesFromJPackageLayout() {
         Path jarPath = Path.of("C:\\Program Files\\EliteSeriesPay\\app\\eliteseriespay.jar");
 
         assertThat(ApplicationDataDirectory.isJPackageApplicationLayout(jarPath)).isTrue();
     }
 
     @Test
-    void toJarPath_extractsJarFileFromSpringBootCodeSourceUri() throws Exception {
+    void applicationDirectory_resolvesInstallRootFromJarPath() throws Exception {
         URI codeSource = URI.create(
                 "jar:file:/C:/Program%20Files/EliteSeriesPay/app/eliteseriespay-0.0.1-SNAPSHOT.jar!/BOOT-INF/classes!/");
 
-        assertThat(ApplicationDataDirectory.isJPackageApplicationLayout(ApplicationDataDirectory.toJarPathForTest(codeSource)))
-                .isTrue();
+        Path jarPath = ApplicationDataDirectory.toJarPathForTest(codeSource);
+        assertThat(jarPath).isNotNull();
+        assertThat(jarPath.getParent().getFileName().toString()).isEqualTo("app");
+        assertThat(jarPath.getParent().getParent()).isEqualTo(Path.of("C:\\Program Files\\EliteSeriesPay"));
     }
 
     @Test
@@ -184,5 +194,60 @@ class ApplicationDataDirectoryTest {
         } finally {
             restoreSystemProperty(ApplicationDataDirectory.PACKAGED_PROPERTY, originalValue);
         }
+    }
+
+    @Test
+    void migrateLegacyDatabaseIfNeeded_movesDatabaseFromLegacyLocation(@TempDir Path tempDir) throws Exception {
+        Path legacyDatabase = ApplicationDataDirectory.legacyDatabasePath(tempDir);
+        Files.createDirectories(tempDir);
+        Files.writeString(legacyDatabase, "legacy-data");
+
+        DatabaseLocationMigrationResult result = ApplicationDataDirectory.migrateLegacyDatabaseIfNeeded(tempDir);
+
+        assertThat(result.status()).isEqualTo(DatabaseLocationMigrationResult.Status.MOVED);
+        assertThat(Files.exists(ApplicationDataDirectory.databasePath(tempDir))).isTrue();
+        assertThat(Files.exists(legacyDatabase)).isFalse();
+        assertThat(Files.readString(ApplicationDataDirectory.databasePath(tempDir))).isEqualTo("legacy-data");
+    }
+
+    @Test
+    void migrateLegacyDatabaseIfNeeded_skipsWhenDestinationExists(@TempDir Path tempDir) throws Exception {
+        Path legacyDatabase = ApplicationDataDirectory.legacyDatabasePath(tempDir);
+        Path targetDatabase = ApplicationDataDirectory.databasePath(tempDir);
+        Files.createDirectories(targetDatabase.getParent());
+        Files.writeString(legacyDatabase, "legacy-data");
+        Files.writeString(targetDatabase, "existing-data");
+
+        DatabaseLocationMigrationResult result = ApplicationDataDirectory.migrateLegacyDatabaseIfNeeded(tempDir);
+
+        assertThat(result.status()).isEqualTo(DatabaseLocationMigrationResult.Status.SKIPPED_DESTINATION_EXISTS);
+        assertThat(Files.readString(legacyDatabase)).isEqualTo("legacy-data");
+        assertThat(Files.readString(targetDatabase)).isEqualTo("existing-data");
+    }
+
+    @Test
+    void migrateLegacyDatabaseIfNeeded_notNeededWhenLegacyMissing(@TempDir Path tempDir) {
+        DatabaseLocationMigrationResult result = ApplicationDataDirectory.migrateLegacyDatabaseIfNeeded(tempDir);
+
+        assertThat(result.status()).isEqualTo(DatabaseLocationMigrationResult.Status.NOT_NEEDED);
+    }
+
+    @Test
+    void assertDatabaseNotInsideApplicationDirectory_rejectsDatabaseInsideInstallDirectory() {
+        Path installRoot = Path.of("C:\\Program Files\\EliteSeriesPay");
+        Path databaseInsideInstall = installRoot.resolve("data").resolve("eliteseriespay.db");
+
+        assertThatThrownBy(() -> ApplicationDataDirectory.assertDatabaseNotInsideApplicationDirectory(
+                        databaseInsideInstall, installRoot))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("Database must not be stored inside the application installation directory");
+    }
+
+    @Test
+    void assertDatabaseNotInsideApplicationDirectory_allowsDatabaseOutsideInstallDirectory(@TempDir Path tempDir) {
+        Path installRoot = Path.of("C:\\Program Files\\EliteSeriesPay");
+        Path databasePath = tempDir.resolve("data").resolve("eliteseriespay.db");
+
+        ApplicationDataDirectory.assertDatabaseNotInsideApplicationDirectory(databasePath, installRoot);
     }
 }

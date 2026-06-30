@@ -90,7 +90,6 @@ try {
         "--install-dir", $InstallDirName,
         "--win-menu",
         "--win-menu-group", $AppName,
-        "--win-per-user-install",
         "--win-upgrade-uuid", $WinUpgradeUuid,
         "--java-options", "-Deliteseriespay.packaged=true",
         "--java-options", "-Djava.awt.headless=false"
@@ -125,13 +124,18 @@ try {
     Write-Host "MSI upgrade UUID: $WinUpgradeUuid"
     Write-Host ""
     Write-Host "User data directory:"
-    Write-Host "  %LOCALAPPDATA%\EliteSeriesPay"
+    Write-Host "  %LOCALAPPDATA%\EliteSeriesPay\"
+    Write-Host "    data\eliteseriespay.db"
+    Write-Host "    backups\"
+    Write-Host "    logs\"
     Write-Host ""
-    Write-Host "Installed application directory (per-user):"
-    Write-Host "  %LOCALAPPDATA%\$InstallDirName"
+    Write-Host "Installed application directory (requires administrator):"
+    Write-Host "  C:\Program Files\$InstallDirName\"
+    Write-Host ""
+    Write-Host "User data is never removed during upgrade or uninstall."
     Write-Host ""
     Write-Host "Verify installed launcher options in:"
-    Write-Host "  %LOCALAPPDATA%\$InstallDirName\app\$AppName.cfg"
+    Write-Host "  C:\Program Files\$InstallDirName\app\$AppName.cfg"
 }
 finally {
     Pop-Location

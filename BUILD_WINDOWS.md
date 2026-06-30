@@ -5,25 +5,32 @@ This guide describes how to build a Windows MSI installer for EliteSeriesPay usi
 The installer:
 
 - bundles a Java 21 runtime (end users do not need Java installed)
-- installs per-user without Administrator privileges (`--win-per-user-install`)
-- installs application files to `%LOCALAPPDATA%\EliteSeriesPay\` (alongside user data files)
+- installs application files to `C:\Program Files\EliteSeriesPay\` (administrator privileges may be required)
 - creates a Start Menu shortcut
 - optionally creates a Desktop shortcut
-- stores user data in `%LOCALAPPDATA%\EliteSeriesPay`
+- stores user data separately under `%LOCALAPPDATA%\EliteSeriesPay\`
+- never deletes user data during upgrade or uninstall
 
 User data layout:
 
 ```
 %LOCALAPPDATA%\EliteSeriesPay\
-  eliteseriespay.db
+  data\
+    eliteseriespay.db
   backups\
-  eliteseriespay.instance.lock
   logs\
     startup.log
     application.log
+  eliteseriespay.instance.lock
 ```
 
-The install directory under `%LOCALAPPDATA%\Programs\` is treated as read-only application content. The app never writes the database, backups, lock file, or logs there.
+The SQLite database is never stored inside the application installation directory. It always resolves to:
+
+```
+%LOCALAPPDATA%\EliteSeriesPay\data\eliteseriespay.db
+```
+
+On first startup after upgrading from older versions, if a database exists at the legacy location `%LOCALAPPDATA%\EliteSeriesPay\eliteseriespay.db`, the application moves it into the `data\` subdirectory automatically.
 
 The SQLite database is created automatically on first launch.
 
@@ -81,7 +88,7 @@ The script:
 3. copies only the executable JAR into `target\jpackage-input`
 4. invokes `jpackage --type msi` to create an MSI with a bundled runtime
 5. passes `-Deliteseriespay.packaged=true` and `-Djava.awt.headless=false` for packaged desktop behavior (system tray, browser launch)
-6. uses a fixed `--win-upgrade-uuid` so a newer MSI replaces the previous install
+6. uses a fixed `--win-upgrade-uuid` so a newer MSI replaces only application files in `C:\Program Files\EliteSeriesPay\`
 
 ## Upgrading an existing installation
 
@@ -91,21 +98,24 @@ User data is **not** stored in the install directory and is **not** removed duri
 
 ```
 %LOCALAPPDATA%\EliteSeriesPay\
-  eliteseriespay.db
+  data\
+    eliteseriespay.db
   backups\
   logs\
 ```
+
+Before Flyway migrations run, the application automatically creates a timestamped backup of the existing database in `%LOCALAPPDATA%\EliteSeriesPay\backups\`.
 
 The instance lock file is temporary and is recreated on the next launch.
 
 ### Update procedure
 
 1. Exit EliteSeriesPay from the tray menu: **Выход**
-2. Run the new MSI (`EliteSeriesPay-<version>.msi`)
+2. Run the new MSI (`EliteSeriesPay-<version>.msi`) and approve the UAC prompt if shown
 3. Follow the installer prompts to upgrade
 4. Launch EliteSeriesPay from the Start Menu
 
-If the application is still running, the installer may fail to replace files in `%LOCALAPPDATA%\EliteSeriesPay\`.
+If the application is still running, the installer may fail to replace files in `C:\Program Files\EliteSeriesPay\`.
 
 ### One-time note for older builds
 
@@ -127,8 +137,8 @@ target\dist\EliteSeriesPay-0.0.2.msi
 
 After installation:
 
-- application files: `%LOCALAPPDATA%\EliteSeriesPay\`
-- launcher config: `%LOCALAPPDATA%\EliteSeriesPay\app\EliteSeriesPay.cfg`
+- application files: `C:\Program Files\EliteSeriesPay\`
+- launcher config: `C:\Program Files\EliteSeriesPay\app\EliteSeriesPay.cfg`
 - Start Menu shortcut: `EliteSeriesPay`
 - Desktop shortcut: created by default (disable with `-SkipDesktopShortcut`)
 - user data: `%LOCALAPPDATA%\EliteSeriesPay\`

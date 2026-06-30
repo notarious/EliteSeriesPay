@@ -14,7 +14,6 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,11 +24,7 @@ public class DatabaseBackupService {
 
     private static final Logger log = LoggerFactory.getLogger(DatabaseBackupService.class);
 
-    static final Pattern BACKUP_FILE_NAME_PATTERN =
-            Pattern.compile("eliteseriespay-\\d{4}-\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}\\.db");
-
-    private static final DateTimeFormatter BACKUP_FILE_NAME_FORMAT =
-            DateTimeFormatter.ofPattern("'eliteseriespay-'yyyy-MM-dd-HH-mm-ss'.db'");
+    static final java.util.regex.Pattern BACKUP_FILE_NAME_PATTERN = DatabaseBackupFiles.BACKUP_FILE_NAME_PATTERN;
 
     private static final DateTimeFormatter DISPLAY_DATE_TIME_FORMAT =
             DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm:ss");
@@ -156,7 +151,7 @@ public class DatabaseBackupService {
     }
 
     private String generateBackupFileName() {
-        return BACKUP_FILE_NAME_FORMAT.format(Instant.now(clock).atZone(ZoneId.systemDefault()));
+        return DatabaseBackupFiles.generateBackupFileName(Instant.now(clock));
     }
 
     private boolean isEmptyDatabase(Path databasePath) throws IOException {

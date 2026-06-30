@@ -107,6 +107,20 @@ http://localhost:8080
 
 The SQLite database is created automatically on first start.
 
+## Windows installation
+
+When installed via the MSI installer:
+
+- application files: `C:\Program Files\EliteSeriesPay\`
+- user data: `%LOCALAPPDATA%\EliteSeriesPay\`
+- database: `%LOCALAPPDATA%\EliteSeriesPay\data\eliteseriespay.db`
+- backups: `%LOCALAPPDATA%\EliteSeriesPay\backups\`
+- logs: `%LOCALAPPDATA%\EliteSeriesPay\logs\`
+
+User data is preserved across upgrades and uninstall. Only application files in `C:\Program Files\EliteSeriesPay\` are replaced during an upgrade.
+
+See `BUILD_WINDOWS.md` for MSI build instructions and `README-RU.md` for end-user documentation in Russian.
+
 ## Tests
 
 Run all tests:

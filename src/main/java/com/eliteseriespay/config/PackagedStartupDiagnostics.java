@@ -37,48 +37,59 @@ final class PackagedStartupDiagnostics {
             Path dataDirectory,
             Path databaseFile,
             Path backupsDirectory,
+            Path applicationDirectory,
             String jdbcUrl) {
         if (!ApplicationDataDirectory.isWindows() || !ApplicationDataDirectory.isPackaged(environment)) {
             return;
         }
 
         try {
-            Path logsDirectory = ApplicationDataDirectory.logsDirectory(dataDirectory);
-            Path lockFile = dataDirectory.resolve("eliteseriespay.instance.lock");
-            List<String> lines = new ArrayList<>();
-            lines.add("packaged property: " + readPackagedPropertyValue());
-            lines.add("jpackage layout: " + ApplicationDataDirectory.isJPackageApplicationLayout());
-            lines.add("packaged mode active: " + ApplicationDataDirectory.isPackaged(environment));
-            lines.add("data directory: " + dataDirectory.toAbsolutePath().normalize());
-            lines.add("database path: " + databaseFile.toAbsolutePath().normalize());
-            lines.add("backup directory: " + backupsDirectory.toAbsolutePath().normalize());
-            lines.add("lock file path: " + lockFile.toAbsolutePath().normalize());
-            lines.add("logs directory: " + logsDirectory.toAbsolutePath().normalize());
-            lines.add("working directory: " + Path.of(System.getProperty("user.dir", ".")).toAbsolutePath().normalize());
-            lines.add("LOCALAPPDATA: " + System.getenv("LOCALAPPDATA"));
-            lines.add("datasource URL: " + jdbcUrl);
-            writeStartupLog(dataDirectory, lines);
+            writeStartupLog(dataDirectory, buildResolvedPathLines(
+                    environment, dataDirectory, databaseFile, backupsDirectory, applicationDirectory, jdbcUrl));
         } catch (IOException exception) {
             System.err.println("Unable to write packaged startup log: " + exception.getMessage());
         }
     }
 
     private static List<String> buildPreSpringLines(Path dataDirectory) {
+        Path applicationDirectory = ApplicationDataDirectory.applicationDirectory();
+        return buildResolvedPathLines(
+                null,
+                dataDirectory,
+                ApplicationDataDirectory.databasePath(dataDirectory),
+                ApplicationDataDirectory.backupsDirectory(dataDirectory),
+                applicationDirectory,
+                "pending Spring environment configuration");
+    }
+
+    private static List<String> buildResolvedPathLines(
+            ConfigurableEnvironment environment,
+            Path dataDirectory,
+            Path databaseFile,
+            Path backupsDirectory,
+            Path applicationDirectory,
+            String jdbcUrl) {
+        Path logsDirectory = ApplicationDataDirectory.logsDirectory(dataDirectory);
+        Path lockFile = dataDirectory.resolve("eliteseriespay.instance.lock");
         List<String> lines = new ArrayList<>();
         lines.add("packaged property: " + readPackagedPropertyValue());
         lines.add("jpackage layout: " + ApplicationDataDirectory.isJPackageApplicationLayout());
-        lines.add("packaged mode active: " + ApplicationDataDirectory.isPackagedPreSpring());
-        lines.add("data directory: " + dataDirectory.toAbsolutePath().normalize());
-        lines.add("database path: " + ApplicationDataDirectory.databasePath(dataDirectory).toAbsolutePath().normalize());
-        lines.add("backup directory: "
-                + ApplicationDataDirectory.backupsDirectory(dataDirectory).toAbsolutePath().normalize());
-        lines.add("lock file path: "
-                + dataDirectory.resolve("eliteseriespay.instance.lock").toAbsolutePath().normalize());
-        lines.add("logs directory: "
-                + ApplicationDataDirectory.logsDirectory(dataDirectory).toAbsolutePath().normalize());
+        if (environment == null) {
+            lines.add("packaged mode active: " + ApplicationDataDirectory.isPackagedPreSpring());
+        } else {
+            lines.add("packaged mode active: " + ApplicationDataDirectory.isPackaged(environment));
+        }
+        if (applicationDirectory != null) {
+            lines.add("application directory: " + applicationDirectory.toAbsolutePath().normalize());
+        }
+        lines.add("user data directory: " + dataDirectory.toAbsolutePath().normalize());
+        lines.add("database path: " + databaseFile.toAbsolutePath().normalize());
+        lines.add("backup directory: " + backupsDirectory.toAbsolutePath().normalize());
+        lines.add("lock file path: " + lockFile.toAbsolutePath().normalize());
+        lines.add("logs directory: " + logsDirectory.toAbsolutePath().normalize());
         lines.add("working directory: " + Path.of(System.getProperty("user.dir", ".")).toAbsolutePath().normalize());
         lines.add("LOCALAPPDATA: " + System.getenv("LOCALAPPDATA"));
-        lines.add("datasource URL: pending Spring environment configuration");
+        lines.add("datasource URL: " + jdbcUrl);
         return lines;
     }
 

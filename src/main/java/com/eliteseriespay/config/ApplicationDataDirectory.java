@@ -1,16 +1,23 @@
 package com.eliteseriespay.config;
 
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Locale;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.util.StringUtils;
 
 public final class ApplicationDataDirectory {
 
+    private static final Logger log = LoggerFactory.getLogger(ApplicationDataDirectory.class);
+
     public static final String DATA_DIR_PROPERTY = "eliteseriespay.data-dir";
     public static final String PACKAGED_PROPERTY = "eliteseriespay.packaged";
     static final String APP_FOLDER_NAME = "EliteSeriesPay";
+    static final String DATA_SUBFOLDER_NAME = "data";
     static final String DATABASE_FILE_NAME = "eliteseriespay.db";
     static final String BACKUPS_FOLDER_NAME = "backups";
     static final String LOGS_FOLDER_NAME = "logs";
@@ -81,7 +88,15 @@ public final class ApplicationDataDirectory {
         return workingDirectory;
     }
 
+    public static Path databaseStorageDirectory(Path dataDirectory) {
+        return dataDirectory.resolve(DATA_SUBFOLDER_NAME);
+    }
+
     public static Path databasePath(Path dataDirectory) {
+        return databaseStorageDirectory(dataDirectory).resolve(DATABASE_FILE_NAME);
+    }
+
+    public static Path legacyDatabasePath(Path dataDirectory) {
         return dataDirectory.resolve(DATABASE_FILE_NAME);
     }
 
@@ -91,6 +106,80 @@ public final class ApplicationDataDirectory {
 
     public static Path logsDirectory(Path dataDirectory) {
         return dataDirectory.resolve(LOGS_FOLDER_NAME);
+    }
+
+    public static Path applicationDirectory() {
+        Path codeSourcePath = detectCodeSourcePath();
+        if (codeSourcePath == null) {
+            return null;
+        }
+
+        Path normalizedPath = codeSourcePath.toAbsolutePath().normalize();
+        Path appDirectory = normalizedPath.getParent();
+        if (appDirectory == null || !"app".equalsIgnoreCase(appDirectory.getFileName().toString())) {
+            return null;
+        }
+
+        Path installRoot = appDirectory.getParent();
+        return installRoot != null ? installRoot.normalize() : null;
+    }
+
+    public static void assertDatabaseNotInsideApplicationDirectory(Path databaseFile) {
+        assertDatabaseNotInsideApplicationDirectory(databaseFile, applicationDirectory());
+    }
+
+    static void assertDatabaseNotInsideApplicationDirectory(Path databaseFile, Path applicationDirectory) {
+        if (applicationDirectory == null) {
+            return;
+        }
+
+        Path normalizedDatabase = databaseFile.toAbsolutePath().normalize();
+        Path normalizedApplication = applicationDirectory.toAbsolutePath().normalize();
+        if (normalizedDatabase.startsWith(normalizedApplication)) {
+            throw new IllegalStateException(
+                    "Database must not be stored inside the application installation directory. "
+                            + "Application directory: "
+                            + normalizedApplication
+                            + ", database path: "
+                            + normalizedDatabase);
+        }
+    }
+
+    public static DatabaseLocationMigrationResult migrateLegacyDatabaseIfNeeded(Path dataDirectory) {
+        Path legacyPath = legacyDatabasePath(dataDirectory);
+        Path targetPath = databasePath(dataDirectory);
+
+        if (!Files.exists(legacyPath)) {
+            log.info(
+                    "Legacy database migration not required: no database at {}",
+                    legacyPath.toAbsolutePath().normalize());
+            return DatabaseLocationMigrationResult.notNeeded(legacyPath, targetPath);
+        }
+
+        if (Files.exists(targetPath)) {
+            log.info(
+                    "Legacy database migration skipped: destination already exists at {} (legacy file remains at {})",
+                    targetPath.toAbsolutePath().normalize(),
+                    legacyPath.toAbsolutePath().normalize());
+            return DatabaseLocationMigrationResult.skippedDestinationExists(legacyPath, targetPath);
+        }
+
+        try {
+            Files.createDirectories(databaseStorageDirectory(dataDirectory));
+            Files.move(legacyPath, targetPath);
+            log.info(
+                    "Legacy database migrated from {} to {}",
+                    legacyPath.toAbsolutePath().normalize(),
+                    targetPath.toAbsolutePath().normalize());
+            return DatabaseLocationMigrationResult.moved(legacyPath, targetPath);
+        } catch (IOException exception) {
+            throw new IllegalStateException(
+                    "Failed to migrate legacy database from "
+                            + legacyPath.toAbsolutePath().normalize()
+                            + " to "
+                            + targetPath.toAbsolutePath().normalize(),
+                    exception);
+        }
     }
 
     public static String toJdbcSqliteFileUrl(Path databaseFile) {
